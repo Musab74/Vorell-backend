@@ -30,7 +30,7 @@ export class MemberService {
         const { memberNick, memberPassword } = input;
         const response: Member | null = await this.memberModel
             .findOne({ memberNick: memberNick })
-            .select('memberPassword')
+            .select('+memberPassword')
             .exec(); // Hashed password
         if (!response || response.memberStatus === MemberStatus.DELETE) {
             throw new InternalServerErrorException(Message.NO_MEMBER_NICK);
@@ -38,7 +38,7 @@ export class MemberService {
             throw new InternalServerErrorException(Message.BLOCKED_USER);
         }
 
-        const isMatch = input.memberPassword === response.memberPassword;
+        const isMatch = memberPassword === response.memberPassword;
         if (!isMatch) {
             throw new InternalServerErrorException(Message.WRONG_PASSWORD);
         }
