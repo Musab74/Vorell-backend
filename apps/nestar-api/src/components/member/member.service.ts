@@ -22,7 +22,7 @@ export class MemberService {
             return result;
         } catch (error) {
             console.log('signup service', error);
-            throw new BadRequestException(error);
+            throw new BadRequestException(Message.USED_MEMBER_NICK_OR_PHONE);
         }
     }
 
