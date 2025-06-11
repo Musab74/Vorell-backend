@@ -9,13 +9,16 @@ import { MemberStatus } from '../../libs/enums/member.enum';
 import { Message } from '../../libs/enums/common.enum';
 import { LoginInput, MemberInput } from '../../libs/DTO/member/member.input';
 import { Member } from '../../libs/DTO/member/member';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class MemberService {
     constructor(
-        @InjectModel('Member') private readonly memberModel: Model<Member>,
+        @InjectModel('Member') private readonly memberModel: Model<Member>, 
+        private authService: AuthService,
     ) { }
     public async signup(input: MemberInput): Promise<Member> {
+         input.memberPassword = await this.authService.hashPassword(input.memberPassword);
         try {
             const result = await this.memberModel.create(input);
             // Auth with tokens
@@ -38,7 +41,7 @@ export class MemberService {
             throw new InternalServerErrorException(Message.BLOCKED_USER);
         }
 
-        const isMatch = memberPassword === response.memberPassword;
+        const isMatch = await this.authService.comparePassword(input.memberPassword, response.memberPassword!);
         if (!isMatch) {
             throw new InternalServerErrorException(Message.WRONG_PASSWORD);
         }

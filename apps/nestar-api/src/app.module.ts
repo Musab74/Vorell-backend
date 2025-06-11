@@ -23,7 +23,7 @@ import { T } from './libs/types/common';
           code: error?.extensions.code,
           message: error?.extensions?.exception?.response?.message || error?.extensions?.response?.message || error?.message, 
         };
-        console.log("GRAPHQL GLOBAL ERROR:",graphQLFormatedError );
+        console.log(`"GRAPHQL GLOBAL ERROR:",graphQLFormatedError \n` );
         return graphQLFormatedError;
         
         
