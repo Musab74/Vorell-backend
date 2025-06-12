@@ -10,19 +10,21 @@ import { Message } from '../../libs/enums/common.enum';
 import { LoginInput, MemberInput } from '../../libs/DTO/member/member.input';
 import { Member } from '../../libs/DTO/member/member';
 import { AuthService } from '../auth/auth.service';
+import { ObjectId } from 'bson';
+import { MemberUpdate } from '../../libs/DTO/member/update.member';
 
 @Injectable()
 export class MemberService {
     constructor(
-        @InjectModel('Member') private readonly memberModel: Model<Member>, 
+        @InjectModel('Member') private readonly memberModel: Model<Member>,
         private authService: AuthService,
     ) { }
     public async signup(input: MemberInput): Promise<Member> {
-         input.memberPassword = await this.authService.hashPassword(input.memberPassword);
+        input.memberPassword = await this.authService.hashPassword(input.memberPassword);
         try {
             const result = await this.memberModel.create(input);
             const accessToken = await this.authService.createToken(result);
-            
+
             return result;
         } catch (error) {
             console.log('signup service', error);
@@ -43,15 +45,26 @@ export class MemberService {
         }
 
         const isMatch = await this.authService.comparePassword(input.memberPassword, response.memberPassword!);
-        if (!isMatch) 
+        if (!isMatch)
             throw new InternalServerErrorException(Message.WRONG_PASSWORD);
-            response.accessToken = await this.authService.createToken(response);
-         
+        response.accessToken = await this.authService.createToken(response);
+
         return response;
     }
 
-    public async updateMember(): Promise<string> {
-        return 'updateMember executed';
+    public async updateMember(memberId: ObjectId, input: MemberUpdate): Promise<Member> {
+        const result: Member | null = await this.memberModel.findByIdAndUpdate({
+
+            _id: memberId,
+            memberStatus: MemberStatus.ACTIVE,
+        }, input,
+            { new: true },
+        ).exec();
+
+        if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+        
+        result.accessToken = await this.authService.createToken(result);
+        return result;
     }
     public async getMember(): Promise<string> {
         return 'getMember executed';

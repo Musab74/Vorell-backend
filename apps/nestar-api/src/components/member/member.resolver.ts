@@ -6,10 +6,11 @@ import { LoginInput, MemberInput } from '../../libs/DTO/member/member.input';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
-import { ObjectId } from 'mongoose';
+import { ObjectId, Types } from 'mongoose';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { MemberUpdate } from '../../libs/DTO/member/update.member';
 
 @Resolver()
 export class MemberResolver {
@@ -30,10 +31,14 @@ export class MemberResolver {
 
   // Authenticated
   @UseGuards(AuthGuard)
-  @Mutation(() => String)
-  public async updateMember(@AuthMember("_id") memberId:ObjectId): Promise<string> {
+  @Mutation(() => Member)
+  public async updateMember(
+    @Args("input")
+    input:MemberUpdate,
+    @AuthMember("_id") memberId:Types.ObjectId): Promise<Member> {
+    delete input._id;
     console.log('updateMember');
-    return this.memberService.updateMember();
+    return this.memberService.updateMember(memberId,input);
   }
 
   @Query(() => String)
