@@ -3,6 +3,10 @@ import { Mutation, Resolver, Query, Args } from '@nestjs/graphql';
 import { MemberService } from './member.service';
 import { Member } from '../../libs/DTO/member/member';
 import { LoginInput, MemberInput } from '../../libs/DTO/member/member.input';
+import { UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { AuthMember } from '../auth/decorators/authMember.decorator';
+import { ObjectId } from 'mongoose';
 
 @Resolver()
 export class MemberResolver {
@@ -22,11 +26,14 @@ export class MemberResolver {
   }
 
   // Authenticated
+  @UseGuards(AuthGuard)
   @Mutation(() => String)
-  public async updateMember(): Promise<string> {
+  public async updateMember(@AuthMember("_id") memberId:ObjectId): Promise<string> {
     console.log('updateMember');
     return this.memberService.updateMember();
   }
+
+  
 
   @Query(() => String)
   public async getMember(): Promise<string> {
