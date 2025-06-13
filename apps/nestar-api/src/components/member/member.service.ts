@@ -5,17 +5,15 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { MemberStatus } from '../../libs/enums/member.enum';
-import { Message } from '../../libs/enums/common.enum';
-import { LoginInput, MemberInput } from '../../libs/DTO/member/member.input';
-import { Member } from '../../libs/DTO/member/member';
+import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
+import { Direction, Message } from '../../libs/enums/common.enum';
+import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry } from '../../libs/DTO/member/member.input';
+import { Member, Members } from '../../libs/DTO/member/member';
 import { AuthService } from '../auth/auth.service';
 import { ObjectId } from 'bson';
 import { MemberUpdate } from '../../libs/DTO/member/update.member';
 import { T } from '../../libs/types/common';
 import { ViewService } from '../view/view.service';
-import { View } from '../../libs/DTO/Views/view';
-import { ViewInput } from '../../libs/DTO/Views/view.input';
 import { ViewGroup } from '../../libs/enums/view.enum';
 
 @Injectable()
@@ -94,11 +92,67 @@ export class MemberService {
         return targetMember;
     }
 
-    public async updateMemberByAdmin(): Promise<string> {
-        return 'updateMemberByAdmin executed';
-    }
+    public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<string> {
+		const { text } = input.search;
+		const match: T = { memberType: MemberType.AGENT, memberStatus: MemberStatus.ACTIVE };
+		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-    public async getAllMemberByAdmin(): Promise<string> {
-        return 'getAllMemberByAdmin executed';
-    }
+		if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+		console.log('match:', match);
+
+		const result = await this.memberModel.aggregate([
+			{ $match: match },
+			{ $sort: sort },
+			{
+				$facet: {
+					list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
+					metaCounter: [{ $count: 'total' }],
+				},
+			},
+		]);
+
+		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		return result[0];
+	}
+
+    
+	public async getAllMembersByAdmin(input: MembersInquiry): Promise<Members> {
+		const { memberStatus, memberType, text } = input.search;
+		const match: T = {};
+		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+
+		if (memberStatus) match.memberStatus = memberStatus;
+		if (memberType) match.memberType = memberType;
+		if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+		console.log('match:', match);
+
+		const result = await this.memberModel.aggregate([
+			{ $match: match },
+			{ $sort: sort },
+			{
+				$facet: {
+					list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
+					metaCounter: [{ $count: 'total' }],
+				},
+			},
+		]);
+
+		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		return result[0];
+	}
+
+	public async updateMemberByAdmin(input: MemberUpdate): Promise<Member> {
+		const result = await this.memberModel.findOneAndUpdate(
+            { _id: input._id },
+            input,
+            { new: true }
+          ).exec();
+          
+          if (!result) {
+            throw new InternalServerErrorException(Message.UPDATE_FAILED);
+          }
+          
+          return result;
+          
+	}
 }
