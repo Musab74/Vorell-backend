@@ -55,11 +55,11 @@ export class MemberResolver {
 	}
 
   @UseGuards(WithoutGuard)
-	@Query(() => String)
+	@Query(() => Members)
 	public async getAgents(
 		@Args('input') input: AgentsInquiry,
 		@AuthMember('_id') memberId: Types.ObjectId, //
-	): Promise<string> {
+	): Promise<Members> {
 		console.log('Query: getDealers');
 		return await this.memberService.getAgents(memberId, input);
 	}
