@@ -16,7 +16,7 @@ export class ViewService {
             return await this.viewModel.create(input);
         }else return null;
     }
-    private async checkViewExistance(input:ViewInput):Promise<View> {
+    private async checkViewExistance(input:ViewInput):Promise<View |null> {
         const  {memberId, viewRefId} = input;
         const search:T = {memberId:memberId, viewRefId:viewRefId};
         return await this.viewModel.findOne(search).exec();
