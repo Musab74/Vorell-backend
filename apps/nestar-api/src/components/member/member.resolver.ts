@@ -6,7 +6,7 @@ import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry } from '../../li
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
-import { ObjectId, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -16,45 +16,45 @@ import { WithoutGuard } from '../auth/guards/without.guard';
 
 @Resolver()
 export class MemberResolver {
-  constructor(private readonly memberService: MemberService) {}
+	constructor(private readonly memberService: MemberService) { }
 
-  //mutation = post
-  @Mutation(() => Member)
-  public async signup(@Args('input') input: MemberInput): Promise<Member> {
-      console.log('Mutation: signup');
-      return await this.memberService.signup(input);
-  }
+	//mutation = post
+	@Mutation(() => Member)
+	public async signup(@Args('input') input: MemberInput): Promise<Member> {
+		console.log('Mutation: signup');
+		return await this.memberService.signup(input);
+	}
 
-  @Mutation(() => Member)
-  public async login(@Args('input') input: LoginInput): Promise<Member> {
-      console.log('Mutation: login');
-      return await this.memberService.login(input);
-  }
+	@Mutation(() => Member)
+	public async login(@Args('input') input: LoginInput): Promise<Member> {
+		console.log('Mutation: login');
+		return await this.memberService.login(input);
+	}
 
-  // Authenticated
-  @UseGuards(AuthGuard)
-  @Mutation(() => Member)
-  public async updateMember(
-    @Args("input")
-    input:MemberUpdate,
-    @AuthMember("_id") memberId:Types.ObjectId): Promise<Member> {
-    delete input._id;
-    console.log('updateMember');
-    return this.memberService.updateMember(memberId,input);
-  }
+	// Authenticated
+	@UseGuards(AuthGuard)
+	@Mutation(() => Member)
+	public async updateMember(
+		@Args("input")
+		input: MemberUpdate,
+		@AuthMember("_id") memberId: Types.ObjectId): Promise<Member> {
+		delete input._id;
+		console.log('updateMember');
+		return this.memberService.updateMember(memberId, input);
+	}
 
-  @UseGuards(WithoutGuard)
+	@UseGuards(WithoutGuard)
 	@Query(() => Member)
 	public async getMember(
 		@Args('memberId') input: string,
-		@AuthMember('_id') memberId: Types.ObjectId, 
+		@AuthMember('_id') memberId: Types.ObjectId,
 	): Promise<Member> {
 		console.log('Query: getMember');
 		const targetId = shapeIntoMongoObjectId(input);
 		return await this.memberService.getMember(memberId, targetId);
 	}
 
-  @UseGuards(WithoutGuard)
+	@UseGuards(WithoutGuard)
 	@Query(() => Members)
 	public async getAgents(
 		@Args('input') input: AgentsInquiry,
@@ -63,10 +63,10 @@ export class MemberResolver {
 		console.log('Query: getDealers');
 		return await this.memberService.getAgents(memberId, input);
 	}
-  
-  
-  // Authenticated
-  @Roles(MemberType.ADMIN)
+
+
+	// Authenticated
+	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
 	@Query(() => Members)
 	public async getAllMembersByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {

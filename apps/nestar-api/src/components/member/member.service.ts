@@ -2,6 +2,7 @@ import {
     BadRequestException,
     Injectable,
     InternalServerErrorException,
+    UseGuards,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -15,6 +16,11 @@ import { MemberUpdate } from '../../libs/DTO/member/update.member';
 import { T } from '../../libs/types/common';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
+import { GraphQLUpload, FileUpload } from 'graphql-upload';
+import { createWriteStream } from 'fs';
+import { getSerialForImage, validMimeTypes } from '../../libs/config';
+import { Args, Mutation } from '@nestjs/graphql';
+import { AuthGuard } from '../auth/guards/auth.guard';
 
 @Injectable()
 export class MemberService {
@@ -66,93 +72,161 @@ export class MemberService {
         ).exec();
 
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-        
+
         result.accessToken = await this.authService.createToken(result);
         return result;
     }
-    public async getMember(targetId:ObjectId, memberId:ObjectId): Promise<Member> {
-        const search:T = {
-            _id:targetId,
-            memberStatus:{
+    public async getMember(targetId: ObjectId, memberId: ObjectId): Promise<Member> {
+        const search: T = {
+            _id: targetId,
+            memberStatus: {
                 $in: [MemberStatus.ACTIVE, MemberStatus.BLOCK],
             },
         };
         const targetMember = await this.memberModel.findOne(search).exec();
-        if(!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+        if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-        if(memberId) {
-            const viewInput = {memberId:memberId, viewRefId:targetId, viewGroup:ViewGroup.MEMBER}
-          const newView = await this.viewService.recordView(viewInput)
-          if(newView) {
-            await this.memberModel.findOneAndUpdate(search, {$inc: {memberViews:1}} , {new:true}).exec();
-            targetMember.memberViews++;
-          }
+        if (memberId) {
+            const viewInput = { memberId: memberId, viewRefId: targetId, viewGroup: ViewGroup.MEMBER }
+            const newView = await this.viewService.recordView(viewInput)
+            if (newView) {
+                await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
+                targetMember.memberViews++;
+            }
         }
 
         return targetMember;
     }
 
-    public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<string> {
-		const { text } = input.search;
-		const match: T = { memberType: MemberType.AGENT, memberStatus: MemberStatus.ACTIVE };
-		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+    public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<Members> {
+        const { text } = input.search;
+        const match: T = { memberType: MemberType.AGENT, memberStatus: MemberStatus.ACTIVE };
+        const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-		if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
-		console.log('match:', match);
+        if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+        console.log('match:', match);
 
-		const result = await this.memberModel.aggregate([
-			{ $match: match },
-			{ $sort: sort },
-			{
-				$facet: {
-					list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
-					metaCounter: [{ $count: 'total' }],
-				},
-			},
-		]);
+        const result = await this.memberModel.aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ]);
 
-		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-		return result[0];
-	}
+        if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+        return result[0];
+    }
 
-    
-	public async getAllMembersByAdmin(input: MembersInquiry): Promise<Members> {
-		const { memberStatus, memberType, text } = input.search;
-		const match: T = {};
-		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-		if (memberStatus) match.memberStatus = memberStatus;
-		if (memberType) match.memberType = memberType;
-		if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
-		console.log('match:', match);
+    public async getAllMembersByAdmin(input: MembersInquiry): Promise<Members> {
+        const { memberStatus, memberType, text } = input.search;
+        const match: T = {};
+        const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-		const result = await this.memberModel.aggregate([
-			{ $match: match },
-			{ $sort: sort },
-			{
-				$facet: {
-					list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
-					metaCounter: [{ $count: 'total' }],
-				},
-			},
-		]);
+        if (memberStatus) match.memberStatus = memberStatus;
+        if (memberType) match.memberType = memberType;
+        if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
+        console.log('match:', match);
 
-		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-		return result[0];
-	}
+        const result = await this.memberModel.aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ]);
 
-	public async updateMemberByAdmin(input: MemberUpdate): Promise<Member> {
-		const result = await this.memberModel.findOneAndUpdate(
+        if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    // Image uploader
+
+    public async updateMemberByAdmin(input: MemberUpdate): Promise<Member> {
+        const result = await this.memberModel.findOneAndUpdate(
             { _id: input._id },
             input,
             { new: true }
-          ).exec();
-          
-          if (!result) {
+        ).exec();
+
+        if (!result) {
             throw new InternalServerErrorException(Message.UPDATE_FAILED);
-          }
-          
-          return result;
-          
-	}
+        }
+
+        return result;
+
+    }
+
+    @UseGuards(AuthGuard)
+@Mutation((returns) => String)
+public async imageUploader(
+	@Args({ name: 'file', type: () => GraphQLUpload })
+{ createReadStream, filename, mimetype }: FileUpload,
+@Args('target') target: String,
+): Promise<string> {
+	console.log('Mutation: imageUploader');
+
+	if (!filename) throw new Error(Message.UPLOAD_FAILED);
+const validMime = validMimeTypes.includes(mimetype);
+if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+
+const imageName = getSerialForImage(filename);
+const url = `uploads/${target}/${imageName}`;
+const stream = createReadStream();
+
+const result = await new Promise((resolve, reject) => {
+	stream
+		.pipe(createWriteStream(url))
+		.on('finish', async () => resolve(true))
+		.on('error', () => reject(false));
+});
+if (!result) throw new Error(Message.UPLOAD_FAILED);
+
+return url;
+}
+
+@UseGuards(AuthGuard)
+@Mutation((returns) => [String])
+public async imagesUploader(
+	@Args('files', { type: () => [GraphQLUpload] })
+files: Promise<FileUpload>[],
+@Args('target') target: String,
+): Promise<string[]> {
+	console.log('Mutation: imagesUploader');
+
+    const uploadedImages: string[] = [];
+    	const promisedList = files.map(async (img: Promise<FileUpload>, index: number): Promise<Promise<void>> => {
+		try {
+			const { filename, mimetype, encoding, createReadStream } = await img;
+
+			const validMime = validMimeTypes.includes(mimetype);
+			if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+
+			const imageName = getSerialForImage(filename);
+			const url = `uploads/${target}/${imageName}`;
+			const stream = createReadStream();
+
+			const result = await new Promise((resolve, reject) => {
+				stream
+					.pipe(createWriteStream(url))
+					.on('finish', () => resolve(true))
+					.on('error', () => reject(false));
+			});
+			if (!result) throw new Error(Message.UPLOAD_FAILED);
+
+			uploadedImages[index] = url;
+		} catch (err) {
+			console.log('Error, file missing!');
+		}
+	});
+
+	await Promise.all(promisedList);
+	return uploadedImages;
+}
 }
