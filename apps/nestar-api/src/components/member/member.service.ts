@@ -13,7 +13,7 @@ import { Member, Members } from '../../libs/DTO/member/member';
 import { AuthService } from '../auth/auth.service';
 import { ObjectId } from 'bson';
 import { MemberUpdate } from '../../libs/DTO/member/update.member';
-import { T } from '../../libs/types/common';
+import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
@@ -228,5 +228,10 @@ files: Promise<FileUpload>[],
 
 	await Promise.all(promisedList);
 	return uploadedImages;
+}
+
+public async memberStatsEditor(input: StatisticModifier): Promise<Member> {
+    const { _id, targetKey, modifier } = input;
+    return await this.memberModel.findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true }).exec() as Member;
 }
 }
