@@ -76,7 +76,7 @@ export class MemberService {
         result.accessToken = await this.authService.createToken(result);
         return result;
     }
-    public async getMember(targetId: ObjectId, memberId: ObjectId): Promise<Member> {
+    public async getMember(targetId: ObjectId, memberId: ObjectId | null): Promise<Member |null> {
         const search: T = {
             _id: targetId,
             memberStatus: {

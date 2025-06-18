@@ -12,7 +12,29 @@ export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'm
     const ext = path.parse(filename).ext;
     return uuidv4() + ext;
  };
+ export const availableOptions = ['propertyBarter', 'propertyRent'];
+
+export const availablePropertySorts = [
+  'createdAt',
+  'updatedAt',
+  'propertyRank',
+  'propertyViews',
+  'propertyLikes',
+  'propertyPrice',
+];
+
+export const lookUpMember = {
+   $lookup: {
+     from: 'members',
+     localField: 'memberId',
+     foreignField: '_id',
+     as: 'memberData',
+   },
+ };
 
 export const shapeIntoMongoObjectId = (target: any) => {
    return typeof target === "string" ? new ObjectId(target) : target;
 }
+export const shapeId = (target: any) => {
+   return typeof target === 'string' ? new ObjectId(target) : target;
+ };

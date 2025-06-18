@@ -20,3 +20,4 @@ export class ViewInput {
     memberId: ObjectId;
 
 }
+
