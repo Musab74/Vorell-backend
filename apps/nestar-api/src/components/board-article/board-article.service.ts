@@ -118,4 +118,5 @@ export class BoardArticleService {
 			.findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
 			.exec() as BoardArticle;
 	}
+
 }

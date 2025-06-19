@@ -9,6 +9,9 @@ import { ObjectId } from 'mongoose';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { shapeIntoMongoObjectId } from '../../libs/config';
 import { BoardArticleUpdate } from '../../libs/DTO/board-article/board-article.update';
+import { MemberType } from '../../libs/enums/member.enum';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Resolver()
 export class BoardArticleResolver {
@@ -59,4 +62,5 @@ export class BoardArticleResolver {
 		console.log('Query: getBoardArticles');
 		return await this.boardArticleService.getBoardArticles(memberId, input);
 	}
+
 }
