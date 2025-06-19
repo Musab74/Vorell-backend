@@ -76,6 +76,7 @@ export class MemberService {
         result.accessToken = await this.authService.createToken(result);
         return result;
     }
+
     public async getMember(targetId: ObjectId, memberId: ObjectId | null): Promise<Member> {
         const search: T = {
             _id: targetId,
@@ -93,10 +94,13 @@ export class MemberService {
                 await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
                 targetMember.memberViews++;
             }
+            return targetMember;
+ 
         }
 
         return targetMember;
     }
+    
 
     public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<Members> {
         const { text } = input.search;
