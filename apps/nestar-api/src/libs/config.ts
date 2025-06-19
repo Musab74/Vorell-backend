@@ -3,6 +3,7 @@ import {ObjectId} from "bson";
 export const availableAgentSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank"];
 export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
 
+
  // IMAGE CONFIGURATION (config.js)
  import { v4 as uuidv4 } from 'uuid';
  import * as path from 'path';
@@ -13,6 +14,8 @@ export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'm
     return uuidv4() + ext;
  };
  export const availableOptions = ['propertyBarter', 'propertyRent'];
+ export const availableBoardArticleSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews'];
+export const availableCommentSorts = ['createdAt', 'updatedAt'];
 
 export const availablePropertySorts = [
   'createdAt',
