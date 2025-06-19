@@ -5,7 +5,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry } from '../../libs/DTO/member/member.input';
@@ -83,11 +83,11 @@ export class MemberService {
                 $in: [MemberStatus.ACTIVE, MemberStatus.BLOCK],
             },
         };
-        const targetMember = await this.memberModel.findOne(search).exec();
+        const targetMember = await this.memberModel.findOne(search).lean().exec();
         if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: targetId, viewGroup: ViewGroup.MEMBER }
+            const viewInput = { memberId: memberId, viewRefId: targetId, viewGroup: ViewGroup.MEMBER };
             const newView = await this.viewService.recordView(viewInput)
             if (newView) {
                 await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
@@ -163,7 +163,7 @@ export class MemberService {
 
     }
 
-    @UseGuards(AuthGuard)
+@UseGuards(AuthGuard)
 @Mutation((returns) => String)
 public async imageUploader(
 	@Args({ name: 'file', type: () => GraphQLUpload })

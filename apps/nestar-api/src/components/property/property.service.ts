@@ -38,31 +38,31 @@ export class PropertyService {
     }
 
     // GET PROPERTY
-    // public async getProperty(memberId: ObjectId, propertyId: ObjectId): Promise<Property> {
-    //     const search: T = {
-    //         _id: propertyId,
-    //         propertyStatus: PropertyStatus.ACTIVE,
-    //     };
-    //     const targetProperty = await this.propertyModel.findOne(search).exec();
-    //     if (!targetProperty) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    public async getProperty(memberId: ObjectId, propertyId: ObjectId): Promise<Property> {
+        const search: T = {
+            _id: propertyId,
+            propertyStatus: PropertyStatus.ACTIVE,
+        };
+        const targetProperty = await this.propertyModel.findOne(search).exec();
+        if (!targetProperty) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-    //     if (memberId) {
-    //         const viewInput = { memberId: memberId, viewRefId: propertyId, viewGroup: ViewGroup.PROPERTY };
-    //         const newView = await this.viewService.recordView(viewInput);
-    //         if (newView) {
-    //             await this.propertyStatsEditor({ _id: propertyId, targetKey: 'propertyViews', modifier: 1 });
-    //             targetProperty.propertyViews++;
-    //         }
+        if (memberId) {
+            const viewInput = { memberId: memberId, viewRefId: propertyId, viewGroup: ViewGroup.PROPERTY };
+            const newView = await this.viewService.recordView(viewInput);
+            if (newView) {
+                await this.propertyStatsEditor({ _id: propertyId, targetKey: 'propertyViews', modifier: 1 });
+                targetProperty.propertyViews++;
+            }
 
-    //         targetProperty.memberData = await this.memberService.getMember(null as any, targetProperty.memberId as any);
+            targetProperty.memberData = await this.memberService.getMember(null as any, targetProperty.memberId as any);
 
-    //         // meLiked
+            // meLiked
 
-    //         return targetProperty;
-    //     }
-    //     return targetProperty;
+            return targetProperty;
+        }
+        return targetProperty;
 
-    // }
+    }
 
     // UPDATE PROPERTY
     public async updateProperty(memberId: ObjectId, input: PropertyUpdate): Promise<Property> {

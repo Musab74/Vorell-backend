@@ -31,16 +31,16 @@ export class PropertyResolver {
 	}
 
 	// GET PROPERTY
-	// @UseGuards(WithoutGuard)
-	// @Query(() => Property)
-	// public async getProperty(
-	// 	@Args('propertyId') input: string,
-	// 	@AuthMember('_id') memberId: ObjectId,
-	// ): Promise<Property> {
-	// 	console.log('Query: getProperty');
-	// 	const propertyId = shapeIntoMongoObjectId(input);
-	// 	return await this.propertyService.getProperty(memberId, propertyId);
-	// }
+	@UseGuards(WithoutGuard)
+	@Query(() => Property)
+	public async getProperty(
+		@Args('propertyId') input: string,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Property> {
+		console.log('Query: getProperty');
+		const propertyId = shapeIntoMongoObjectId(input);
+		return await this.propertyService.getProperty(memberId, propertyId);
+	}
 
 	// UPDATE PROPERTY
 	@Roles(MemberType.AGENT)
