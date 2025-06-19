@@ -22,6 +22,7 @@ import { getSerialForImage, validMimeTypes } from '../../libs/config';
 import { Args, Mutation } from '@nestjs/graphql';
 import { AuthGuard } from '../auth/guards/auth.guard';
 
+
 @Injectable()
 export class MemberService {
     constructor(
@@ -88,7 +89,7 @@ export class MemberService {
         if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: targetId, viewGroup: ViewGroup.MEMBER };
+            const viewInput:any = { memberId: memberId, viewRefId: targetId, viewGroup: ViewGroup.MEMBER };
             const newView = await this.viewService.recordView(viewInput)
             if (newView) {
                 await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
