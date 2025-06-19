@@ -4,13 +4,13 @@ import { BoardArticle, BoardArticles } from '../../libs/DTO/board-article/board-
 import { Model, ObjectId } from 'mongoose';
 import { ViewService } from '../view/view.service';
 import { MemberService } from '../member/member.service';
-import { BoardArticleInput, BoardArticlesInquiry } from '../../libs/DTO/board-article/board-article.input';
+import { AllBoardArticlesInquiry, BoardArticleInput, BoardArticlesInquiry } from '../../libs/DTO/board-article/board-article.input';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { BoardArticleStatus } from '../../libs/enums/board-article.enum';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { BoardArticleUpdate } from '../../libs/DTO/board-article/board-article.update';
-import { shapeIntoMongoObjectId } from '../../libs/config';
+import { lookUpMember, shapeIntoMongoObjectId } from '../../libs/config';
 
 @Injectable()
 export class BoardArticleService {
@@ -109,6 +109,66 @@ export class BoardArticleService {
 		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
 		return result[0];
+	}
+
+		/** ADMIN **/
+
+	// GET ALL BOARD ARTICLES BY ADMIN
+	public async getAllBoardArticlesByAdmin(input: AllBoardArticlesInquiry): Promise<BoardArticles> {
+		const { articleStatus, articleCategory } = input.search;
+		const match: T = {};
+		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+
+		if (articleStatus) match.articleStatus = articleStatus;
+		if (articleCategory) match.articleCategory = articleCategory;
+
+		const result = await this.boardArticleModel.aggregate([
+			{ $match: match },
+			{ $sort: sort },
+			{
+				$facet: {
+					list: [
+						{ $skip: (input.page - 1) * input.limit },
+						{ $limit: input.limit },
+						lookUpMember,
+						{ $unwind: '$memberData' },
+					],
+					metaCounter: [{ $count: 'total' }],
+				},
+			},
+		]);
+
+		if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		return result[0];
+	}
+
+	// UPDATE BOARD ARTICLES BY ADMIN
+	public async updateBoardArticleByAdmin(input: BoardArticleUpdate): Promise<BoardArticle> {
+		let { _id, articleStatus } = input;
+		const search: T = {
+			_id: _id,
+			articleStatus: BoardArticleStatus.ACTIVE,
+		};
+
+		const result = await this.boardArticleModel.findOneAndUpdate(search, input, { new: true }).exec();
+		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+		if (articleStatus === BoardArticleStatus.DELETE) {
+			await this.memberService.memberStatsEditor({
+				_id: result.memberId,
+				targetKey: 'memberArticles',
+				modifier: -1,
+			});
+		}
+		return result;
+	}
+
+	// DELETE BOARD ARTICLES BY ADMIN
+	public async removeBoardArticleByAdmin(articleId: ObjectId): Promise<BoardArticle> {
+		const search: T = { _id: articleId, articleStatus: BoardArticleStatus.DELETE };
+		const result = await this.boardArticleModel.findOneAndDelete(search).exec();
+		if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
+
+		return result;
 	}
 
 	// BOARD ARTICLE STATS EDITOR

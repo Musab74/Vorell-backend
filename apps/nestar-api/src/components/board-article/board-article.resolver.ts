@@ -4,7 +4,7 @@ import {  UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { BoardArticle, BoardArticles } from '../../libs/DTO/board-article/board-article';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
-import { BoardArticleInput, BoardArticlesInquiry } from '../../libs/DTO/board-article/board-article.input';
+import { AllBoardArticlesInquiry, BoardArticleInput, BoardArticlesInquiry } from '../../libs/DTO/board-article/board-article.input';
 import { ObjectId } from 'mongoose';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { shapeIntoMongoObjectId } from '../../libs/config';
@@ -62,5 +62,34 @@ export class BoardArticleResolver {
 		console.log('Query: getBoardArticles');
 		return await this.boardArticleService.getBoardArticles(memberId, input);
 	}
+/** ADMIN **/
 
+	// GET ALL BOARD ARTICLES BY ADMIN
+	@Roles(MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Query(() => BoardArticles)
+	public async getAllBoardArticlesByAdmin(@Args('input') input: AllBoardArticlesInquiry): Promise<BoardArticles> {
+		console.log('Query: getAllBoardArticlesByAdmin');
+		return await this.boardArticleService.getAllBoardArticlesByAdmin(input);
+	}
+
+	// UPDATE BOARD ARTICLES BY ADMIN
+	@Roles(MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Mutation(() => BoardArticle)
+	public async updateBoardArticleByAdmin(@Args('input') input: BoardArticleUpdate): Promise<BoardArticle> {
+		console.log('Mutation: updateBoardArticleByAdmin');
+		input._id = shapeIntoMongoObjectId(input._id);
+		return await this.boardArticleService.updateBoardArticleByAdmin(input);
+	}
+
+	// DELETE BOARD ARTICLES BY ADMIN
+	@Roles(MemberType.ADMIN)
+	@UseGuards(RolesGuard)
+	@Mutation(() => BoardArticle)
+	public async removeBoardArticleByAdmin(@Args('articleId') input: string): Promise<BoardArticle> {
+		console.log('Mutation: removeBoardArticleByAdmin');
+		const articleId = shapeIntoMongoObjectId(input);
+		return await this.boardArticleService.removeBoardArticleByAdmin(articleId);
+	}
 }
