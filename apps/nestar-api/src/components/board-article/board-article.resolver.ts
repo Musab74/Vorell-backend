@@ -65,13 +65,13 @@ export class BoardArticleResolver {
 
 	@UseGuards(AuthGuard)
 	@Mutation(() => BoardArticle)
-	public async likeTargetBoartArticle(
+	public async likeTargetBoardArticle(
 		@Args('articleId') input: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<BoardArticle> {
 		console.log('Mutation: likeTargetBoartArticle');
 		const likeRefId = shapeIntoMongoObjectId(input);
-		return await this.boardArticleService.likeTargetBoartArticle(memberId, likeRefId);
+		return await this.boardArticleService.likeTargetBoardArticle(memberId, likeRefId);
 	}
 
 /** ADMIN **/
