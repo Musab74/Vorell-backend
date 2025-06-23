@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
+import { Follower, Followers, Following, Followings } from '../../libs/DTO/follow/follow';
 import { MemberService } from '../member/member.service';
 import { Direction, Message } from '../../libs/enums/common.enum';
-import { T } from '../../libs/types/common';
-import { Follower, Followers, Following, Followings } from '../../libs/DTO/follow/follow';
 import { FollowInquiry } from '../../libs/DTO/follow/follow.input';
+import { T } from '../../libs/types/common';
 import { lookupFollowerData, lookupFollowingData } from '../../libs/config';
  
 @Injectable()
