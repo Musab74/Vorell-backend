@@ -6,7 +6,7 @@ import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry } from '../../li
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
-import { Types } from 'mongoose';
+import { ObjectId, Types } from 'mongoose';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -37,7 +37,7 @@ export class MemberResolver {
 	public async updateMember(
 		@Args("input")
 		input: MemberUpdate,
-		@AuthMember("_id") memberId: Types.ObjectId): Promise<Member> {
+		@AuthMember("_id") memberId: ObjectId): Promise<Member> {
 		delete input._id;
 		console.log('updateMember');
 		return this.memberService.updateMember(memberId, input);
@@ -47,7 +47,7 @@ export class MemberResolver {
 	@Query(() => Member)
 	public async getMember(
 		@Args('memberId') input: string,
-		@AuthMember('_id') memberId: Types.ObjectId,
+		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Member> {
 		console.log('Query: getMember');
 		const targetId = shapeIntoMongoObjectId(input);
@@ -58,7 +58,7 @@ export class MemberResolver {
 	@Query(() => Members)
 	public async getAgents(
 		@Args('input') input: AgentsInquiry,
-		@AuthMember('_id') memberId: Types.ObjectId, //
+		@AuthMember('_id') memberId: ObjectId, //
 	): Promise<Members> {
 		console.log('Query: getDealers');
 		return await this.memberService.getAgents(memberId, input);
@@ -72,6 +72,18 @@ export class MemberResolver {
 	public async getAllMembersByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {
 		console.log('Query: getAllMembersByAdmin');
 		return await this.memberService.getAllMembersByAdmin(input);
+	}
+
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => Member)
+	public async likeTargetMember(
+		@Args('memberId') input: string,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Member> {
+		console.log('Mutation: likeTargetMember');
+		const likeRefId = shapeIntoMongoObjectId(input);
+		return await this.memberService.likeTargetMember(memberId, likeRefId);
 	}
 
 	// Authorization ADMIN
