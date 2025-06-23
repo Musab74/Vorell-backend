@@ -62,6 +62,18 @@ export class BoardArticleResolver {
 		console.log('Query: getBoardArticles');
 		return await this.boardArticleService.getBoardArticles(memberId, input);
 	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => BoardArticle)
+	public async likeTargetBoartArticle(
+		@Args('articleId') input: string,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<BoardArticle> {
+		console.log('Mutation: likeTargetBoartArticle');
+		const likeRefId = shapeIntoMongoObjectId(input);
+		return await this.boardArticleService.likeTargetBoartArticle(memberId, likeRefId);
+	}
+
 /** ADMIN **/
 
 	// GET ALL BOARD ARTICLES BY ADMIN
