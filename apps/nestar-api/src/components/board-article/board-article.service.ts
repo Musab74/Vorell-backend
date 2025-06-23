@@ -46,18 +46,17 @@ export class BoardArticleService {
         if (!targetBoardArticle) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: articleId, viewGroup: ViewGroup.ARTICLE };
-            const newView = await this.viewService.recordView(viewInput);
-            if (newView) {
-                await this.boardArticleStatsEditor({ _id: articleId, targetKey: 'articleViews', modifier: 1 });
-                targetBoardArticle.articleViews++;
-            }
+			const viewInput = { memberId: memberId, viewRefId: articleId, viewGroup: ViewGroup.ARTICLE };
+			const newView = await this.viewService.recordView(viewInput);
+			if (newView) {
+				await this.boardArticleStatsEditor({ _id: articleId, targetKey: 'articleViews', modifier: 1 });
+				targetBoardArticle.articleViews++;
+			}
 
-            // meLiked
-            targetBoardArticle.memberData = await this.memberService.getMember( targetBoardArticle.memberId as any, null
- );
-            return targetBoardArticle;
-        }
+			// meLiked
+			const likeInput = { memberId: memberId, likeRefId: articleId, likeGroup: LikeGroup.ARTICLE };
+			targetBoardArticle.meLiked = await this.likeService.checkLikeExistence(likeInput);
+		}
         return targetBoardArticle;
     }
 
