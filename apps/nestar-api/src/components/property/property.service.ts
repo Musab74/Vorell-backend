@@ -11,7 +11,7 @@ import { StatisticModifier, T } from '../../libs/types/common';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { PropertyUpdate } from '../../libs/DTO/property/propertyUpdate';
-import { lookUpMember, shapeId } from '../../libs/config';
+import { lookupAuthMemberLiked, lookUpMember, shapeId } from '../../libs/config';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
 
@@ -117,6 +117,7 @@ export class PropertyService {
                             { $skip: (input.page - 1) * input.limit },
                             { $limit: input.limit },
                             // meLiked
+							lookupAuthMemberLiked(memberId),
                         ],
                         metaCounter: [{ $count: 'total' }],
                     },
