@@ -18,7 +18,7 @@ import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
 import { createWriteStream } from 'fs';
-import { getSerialForImage, validMimeTypes } from '../../libs/config';
+import { getSerialForImage, lookupAuthMemberLiked, validMimeTypes } from '../../libs/config';
 import { Args, Mutation } from '@nestjs/graphql';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { LikeInput } from '../../libs/DTO/like/like.input';
@@ -135,7 +135,9 @@ export class MemberService {
             { $sort: sort },
             {
                 $facet: {
-                    list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit }],
+                    list: [{ $skip: (input.page - 1) * input.limit }, { $limit: input.limit },
+                        lookupAuthMemberLiked(memberId)
+                    ],
                     metaCounter: [{ $count: 'total' }],
                 },
             },
