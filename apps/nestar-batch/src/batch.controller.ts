@@ -28,7 +28,7 @@ export class BatchController {
 		try {
 			this.logger['context'] = BATCH_TOP_PROPERTIES;
 			this.logger.debug('EXECUTED!');
-			await this.batchService.batchProperties();
+			await this.batchService.batchTopProperties();
 		} catch (err) {
 			this.logger.error(err);
 		}
@@ -39,7 +39,7 @@ export class BatchController {
 		try {
 			this.logger['context'] = BATCH_TOP_AGENTS;
 			this.logger.debug('EXECUTED!');
-			await this.batchService.batchAgents();
+			await this.batchService.batchTopAgents();
 		} catch (err) {
 			this.logger.error(err);
 		}
