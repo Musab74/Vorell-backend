@@ -1,31 +1,40 @@
 import { ObjectId } from "bson";
-
-export const availableAgentSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank"];
-export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
-
-
-// IMAGE CONFIGURATION (config.js)
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import { T } from "./types/common";
 
+// 🎯 Agent/Member sorting (leave as-is if reused for sellers/followers)
+export const availableAgentSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank"];
+export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
+
+// ✅ Image configuration
 export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+
 export const getSerialForImage = (filename: string) => {
   const ext = path.parse(filename).ext;
   return uuidv4() + ext;
 };
-export const availableOptions = ['propertyBarter', 'propertyRent'];
-export const availableBoardArticleSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews'];
-export const availableCommentSorts = ['createdAt', 'updatedAt'];
 
+// ✅ Watch filters and options
+export const availableOptions = ['isLimitedEdition']; // previously 'propertyBarter', 'propertyRent'
+export const availableWatchSorts = [
+  'createdAt',
+  'updatedAt',
+  'rank',
+  'views',
+  'likes',
+  'price',
+];
 
+// ✅ Mongo helpers
 export const shapeIntoMongoObjectId = (target: any) => {
   return typeof target === "string" ? new ObjectId(target) : target;
-}
+};
 export const shapeId = (target: any) => {
   return typeof target === 'string' ? new ObjectId(target) : target;
 };
 
+// ✅ MeLiked lookup (used in GraphQL aggregation for watch likes)
 export const lookupAuthMemberLiked = (memberId: T, targetRefId: string = '$_id') => {
 	return {
 		$lookup: {
@@ -57,9 +66,10 @@ export const lookupAuthMemberLiked = (memberId: T, targetRefId: string = '$_id')
 	};
 };
 
+// ✅ Follow lookup (still general)
 interface LookupAuthMemberFollowed {
-  followerId:T;
-  followingId:string
+  followerId: T;
+  followingId: string;
 }
 
 export const lookupAuthMemberFollowed = (input: LookupAuthMemberFollowed) => {
@@ -97,20 +107,11 @@ export const lookupAuthMemberFollowed = (input: LookupAuthMemberFollowed) => {
   };
 };
 
-
-export const availablePropertySorts = [
-  'createdAt',
-  'updatedAt',
-  'propertyRank',
-  'propertyViews',
-  'propertyLikes',
-  'propertyPrice',
-];
-
+// ✅ Watch lookup (previously property)
 export const lookUpMember = {
   $lookup: {
     from: 'members',
-    localField: 'memberId',
+    localField: 'sellerId', // updated from memberId
     foreignField: '_id',
     as: 'memberData',
   },
@@ -128,18 +129,18 @@ export const lookupFollowingData = {
 export const lookUpFavorite = {
 	$lookup: {
 		from: 'members',
-		localField: 'favoriteProperty.memberId',
+		localField: 'favoriteWatch.sellerId',
 		foreignField: '_id',
-		as: 'favoriteProperty.memberData',
+		as: 'favoriteWatch.memberData',
 	},
 };
 
 export const lookUpVisit = {
 	$lookup: {
 		from: 'members',
-		localField: 'visitedProperty.memberId',
+		localField: 'visitedWatch.sellerId',
 		foreignField: '_id',
-		as: 'visitedProperty.memberData',
+		as: 'visitedWatch.memberData',
 	},
 };
 
@@ -151,4 +152,3 @@ export const lookupFollowerData = {
 		as: 'followerData',
 	},
 };
-

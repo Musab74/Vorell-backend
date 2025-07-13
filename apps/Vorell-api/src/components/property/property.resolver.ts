@@ -3,14 +3,14 @@ import { PropertyService } from './property.service';
 import { MemberType } from '../../libs/enums/member.enum';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UseGuards } from '@nestjs/common';
-import { AgentPropertiesInquiry, AllPropertiesInquiry, OrdinaryInquiry, PropertiesInquiry, PropertyInput } from '../../libs/DTO/property/property.input';
+import { AgentPropertiesInquiry, AllPropertiesInquiry, OrdinaryInquiry, PropertiesInquiry, PropertyInput } from '../../libs/DTO/watch/watch.input';
 import { ObjectId } from 'mongoose';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Properties, Property } from '../../libs/DTO/property/property';
+import { Properties, Property } from '../../libs/DTO/watch/watch';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { shapeIntoMongoObjectId } from '../../libs/config';
-import { PropertyUpdate } from '../../libs/DTO/property/propertyUpdate';
+import { PropertyUpdate } from '../../libs/DTO/watch/watchUpdate';
 import { AuthGuard } from '../auth/guards/auth.guard';
 
 @Resolver()

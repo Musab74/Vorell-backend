@@ -4,8 +4,8 @@ import { Model, ObjectId } from 'mongoose';
 import { T } from '../../libs/types/common';
 import { ViewInput } from '../../libs/DTO/Views/view.input';
 import { View } from '../../libs/DTO/Views/view';
-import { Properties } from '../../libs/DTO/property/property';
-import { OrdinaryInquiry } from '../../libs/DTO/property/property.input';
+import { Properties } from '../../libs/DTO/watch/watch';
+import { OrdinaryInquiry } from '../../libs/DTO/watch/watch.input';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { lookUpVisit } from '../../libs/config';
 

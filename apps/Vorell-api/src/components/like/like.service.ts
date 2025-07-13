@@ -5,9 +5,9 @@ import { T } from '../../libs/types/common';
 import { Message } from '../../libs/enums/common.enum';
 import { LikeInput } from '../../libs/DTO/like/like.input';
 import { Like, MeLiked } from '../../libs/DTO/like/like';
-import { Properties } from '../../libs/DTO/property/property';
+import { Properties } from '../../libs/DTO/watch/watch';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { OrdinaryInquiry } from '../../libs/DTO/property/property.input';
+import { OrdinaryInquiry } from '../../libs/DTO/watch/watch.input';
 import { lookUpFavorite } from '../../libs/config';
 
 @Injectable()

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Member } from 'apps/Vorell-api/src/libs/DTO/member/member';
-import { Property } from 'apps/Vorell-api/src/libs/DTO/property/property';
+import { Property } from 'apps/Vorell-api/src/libs/DTO/watch/watch';
 import { MemberStatus, MemberType } from 'apps/Vorell-api/src/libs/enums/member.enum';
-import { PropertyStatus } from 'apps/Vorell-api/src/libs/enums/property.enum';
+import { PropertyStatus } from 'apps/Vorell-api/src/libs/enums/watch.enum';
 import { Model } from 'mongoose';
 
 @Injectable()
