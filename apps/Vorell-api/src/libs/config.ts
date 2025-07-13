@@ -3,12 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import { T } from "./types/common";
 
-// 🎯 Agent/Member sorting (leave as-is if reused for sellers/followers)
-export const availableAgentSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank"];
+export const availableStoreSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank"];
 export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
 
 // ✅ Image configuration
-export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/webp'];
 
 export const getSerialForImage = (filename: string) => {
   const ext = path.parse(filename).ext;
@@ -16,7 +15,7 @@ export const getSerialForImage = (filename: string) => {
 };
 
 // ✅ Watch filters and options
-export const availableOptions = ['isLimitedEdition']; // previously 'propertyBarter', 'propertyRent'
+export const availableOptions = ['isLimitedEdition']; 
 export const availableWatchSorts = [
   'createdAt',
   'updatedAt',

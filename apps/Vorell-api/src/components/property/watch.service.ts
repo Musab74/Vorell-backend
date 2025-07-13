@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ViewService } from '../view/view.service';
 import { Model, ObjectId, Types } from 'mongoose';
 import { MemberService } from '../member/member.service';
-import { AgentPropertiesInquiry, AllPropertiesInquiry, OrdinaryInquiry, PropertiesInquiry, PropertyInput } from '../../libs/DTO/watch/watch.input';
+import { AgentPropertiesInquiry, AllPropertiesInquiry, OrdinaryInquiry, PropertiesInquiry, PropertyInput, StoreWatchesInquiry } from '../../libs/DTO/watch/watch.input';
 import { Properties, Property } from '../../libs/DTO/watch/watch';
 import { PropertyStatus } from '../../libs/enums/watch.enum';
 import moment from 'moment';
@@ -195,13 +195,13 @@ export class PropertyService {
 	}
 
 
-    //   getAgentsProperties
+    //   getStoreProperties
 
-    public async getAgentsProperties(memberId: ObjectId, input: AgentPropertiesInquiry): Promise<Properties> {
-        const { propertyStatus } = input.search;
-        if (propertyStatus === PropertyStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+    public async getStoreProperties(memberId: ObjectId, input: StoreWatchesInquiry): Promise<Properties> {
+        const { watchStatus } = input.search;
+        if (watchStatus === PropertyStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
-        const match: T = { memberId: memberId, propertyStatus: propertyStatus ?? { $ne: PropertyStatus.DELETE } };
+        const match: T = { memberId: memberId, propertyStatus: watchStatus ?? { $ne: PropertyStatus.DELETE } };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         const result = await this.propertyModel

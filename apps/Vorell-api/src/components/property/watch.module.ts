@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PropertyResolver } from './property.resolver';
-import { PropertyService } from './property.service';
+import { PropertyResolver } from './watch.resolver';
+import { PropertyService } from './watch.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import PropertySchema from '../../schemas/Watch.model';
 import { AuthModule } from '../auth/auth.module';

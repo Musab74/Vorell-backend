@@ -268,14 +268,14 @@ export class AllWatchesInquiry {
 }
 
 @InputType()
-class AgentWatchSearchInput {
+class StoreWatchSearchInput {
   @IsOptional()
   @Field(() => WatchStatus, { nullable: true })
   watchStatus?: WatchStatus;
 }
 
 @InputType()
-export class AgentWatchesInquiry {
+export class StoreWatchesInquiry {
   @IsNotEmpty()
   @Min(1)
   @Field(() => Int)
@@ -296,8 +296,8 @@ export class AgentWatchesInquiry {
   direction?: Direction;
 
   @IsNotEmpty()
-  @Field(() => AgentWatchSearchInput)
-  search: AgentWatchSearchInput;
+  @Field(() => WatchSearchInput)
+  search: StoreWatchSearchInput;
 }
 
 @InputType()

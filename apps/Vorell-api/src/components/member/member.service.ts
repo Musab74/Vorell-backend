@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Direction, Message } from '../../libs/enums/common.enum';
-import { AgentsInquiry, LoginInput, MemberInput, MembersInquiry } from '../../libs/DTO/member/member.input';
+import { LoginInput, MemberInput, MembersInquiry, StoresInquiry } from '../../libs/DTO/member/member.input';
 import { Member, Members } from '../../libs/DTO/member/member';
 import { AuthService } from '../auth/auth.service';
 import { ObjectId } from 'mongoose';
@@ -122,9 +122,9 @@ export class MemberService {
 
     
 
-    public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<Members> {
+    public async getStores(memberId: ObjectId, input: StoresInquiry): Promise<Members> {
         const text = input.search?.text;
-        const match: T = { memberType: MemberType.AGENT, memberStatus: MemberStatus.ACTIVE };
+        const match: T = { memberType: MemberType.STORE, memberStatus: MemberStatus.ACTIVE };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
