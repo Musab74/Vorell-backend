@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Member } from 'apps/nestar-api/src/libs/DTO/member/member';
-import { Property } from 'apps/nestar-api/src/libs/DTO/property/property';
-import { MemberStatus, MemberType } from 'apps/nestar-api/src/libs/enums/member.enum';
-import { PropertyStatus } from 'apps/nestar-api/src/libs/enums/property.enum';
+import { Member } from 'apps/Vorell-api/src/libs/DTO/member/member';
+import { Property } from 'apps/Vorell-api/src/libs/DTO/property/property';
+import { MemberStatus, MemberType } from 'apps/Vorell-api/src/libs/enums/member.enum';
+import { PropertyStatus } from 'apps/Vorell-api/src/libs/enums/property.enum';
 import { Model } from 'mongoose';
 
 @Injectable()
@@ -67,6 +67,6 @@ export class BatchService {
 	}
 
 	public getHello(): string {
-		return 'Welcome to Nestar Batch API Server!';
+		return 'Welcome to Vorell Batch API Server!';
 	}
 }

@@ -48,10 +48,12 @@ export class LoginInput {
 
 @InputType()
 class AISearch {
-    @IsNotEmpty()
-    @Field(()=>String, {nullable:true})
-    text?:string
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  text?: string;
 }
+
+
 
 @InputType()
 export class AgentsInquiry {

@@ -60,7 +60,7 @@ export class MemberResolver {
 		@Args('input') input: AgentsInquiry,
 		@AuthMember('_id') memberId: ObjectId, //
 	): Promise<Members> {
-		console.log('Query: getDealers');
+		console.log('💬 RECEIVED INPUT:', input);
 		return await this.memberService.getAgents(memberId, input);
 	}
 

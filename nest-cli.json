@@ -1,31 +1,31 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/nestar-api/src",
+  "sourceRoot": "apps/Vorell-ap/src",
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "apps/nestar-api/tsconfig.app.json"
+    "tsConfigPath": "apps/Vorell-api/tsconfig.app.json"
   },
   "monorepo": true,
-  "root": "apps/nestar-api",
+  "root": "apps/Vorell-ap",
   "projects": {
-    "nestar-api": {
+    "Vorell-api": {
       "type": "application",
-      "root": "apps/nestar-api",
+      "root": "apps/Vorell-api",
       "entryFile": "main",
-      "sourceRoot": "apps/nestar-api/src",
+      "sourceRoot": "apps/Vorell-api/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/nestar-api/tsconfig.app.json"
+        "tsConfigPath": "apps/Vorell-api/tsconfig.app.json"
       }
     },
-    "nestar-batch": {
+    "Vorell-batch": {
       "type": "application",
-      "root": "apps/nestar-batch",
+      "root": "apps/Vorell-batch",
       "entryFile": "main",
-      "sourceRoot": "apps/nestar-batch/src",
+      "sourceRoot": "apps/Vorell-batch/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/nestar-batch/tsconfig.app.json"
+        "tsConfigPath": "apps/Vorell-batch/tsconfig.app.json"
       }
     }
   }

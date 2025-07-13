@@ -5,8 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MongooseModule } from '@nestjs/mongoose';
-import PropertySchema from 'apps/nestar-api/src/schemas/Property.model';
-import MemberSchema from 'apps/nestar-api/src/schemas/Member.Model';
+import PropertySchema from 'apps/Vorell-api/src/schemas/Property.model';
+import MemberSchema from 'apps/Vorell-api/src/schemas/Member.Model';
 
 @Module({
 	imports: [
