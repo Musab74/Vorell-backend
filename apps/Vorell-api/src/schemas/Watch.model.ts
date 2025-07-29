@@ -50,7 +50,7 @@ const WatchSchema = new Schema(
       type: String,
     },
 
-    views: {
+    watchViews: {
       type: Number,
       default: 0,
     },

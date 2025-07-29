@@ -55,6 +55,17 @@ export class WatchResolver {
 		return await this.watchService.updateWatch(memberId, input);
 	}
 
+	// GET Watches
+	@UseGuards(WithoutGuard)
+	@Query(() => Watches)
+	public async getWatches(
+		@Args('input') input: WatchesInquiry,
+		@AuthMember('_id') memberId: ObjectId,
+	): Promise<Watches> {
+		console.log('Query: getWatches');
+		return await this.watchService.getWatches(memberId, input);
+	}
+
 	// GET FAVORITES
 	@UseGuards(AuthGuard)
 	@Query(() => Watches)
@@ -75,17 +86,6 @@ export class WatchResolver {
 	): Promise<Watches> {
 		console.log('Query: getVisited');
 		return await this.watchService.getVisited(memberId, input);
-	}
-
-	// GET Watches
-	@UseGuards(WithoutGuard)
-	@Query(() => Watches)
-	public async getWatches(
-		@Args('input') input: WatchesInquiry,
-		@AuthMember('_id') memberId: ObjectId,
-	): Promise<Watches> {
-		console.log('Query: getWatches');
-		return await this.watchService.getWatches(memberId, input);
 	}
 
 	// GET STORE WATCHES
@@ -137,10 +137,10 @@ export class WatchResolver {
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
 	@Mutation(() => Watch)
-	public async removeWatchesByAdmin(@Args('watchId') input: string): Promise<Watch> {
+	public async removeWatchByAdmin(@Args('watchId') input: string): Promise<Watch> {
 		console.log('Mutation: removeWatchesByAdmin');
 		const watchId = shapeIntoMongoObjectId(input);
-		return await this.watchService.removeWatchesByAdmin(watchId);
+		return await this.watchService.removeWatchByAdmin(watchId);
 	}
 }
 

@@ -4,10 +4,10 @@ import { Model, ObjectId } from 'mongoose';
 import { T } from '../../libs/types/common';
 import { ViewInput } from '../../libs/DTO/Views/view.input';
 import { View } from '../../libs/DTO/Views/view';
-import { Properties } from '../../libs/DTO/watch/watch';
 import { OrdinaryInquiry } from '../../libs/DTO/watch/watch.input';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { lookUpVisit } from '../../libs/config';
+import { Watches } from '../../libs/DTO/watch/watch';
 
 @Injectable()
 export class ViewService {
@@ -31,9 +31,9 @@ export class ViewService {
     return await this.viewModel.findOne(search).exec();
   }
 
-  public async getVisitedProperties(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
+  public async getVisitedWatches(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
 		const { page, limit } = input;
-		const match: T = { viewGroup: ViewGroup.PROPERTY, memberId: memberId };
+		const match: T = { viewGroup: ViewGroup.WATCH, memberId: memberId };
 
 		const data: T = await this.viewModel
 			.aggregate([
@@ -41,20 +41,20 @@ export class ViewService {
 				{ $sort: { updatedAt: -1 } },
 				{
 					$lookup: {
-						from: 'properties',
+						from: 'watches',
 						localField: 'viewRefId',
 						foreignField: '_id',
-						as: 'visitedProperty',
+						as: 'visitedWatches',
 					},
 				},
-				{ $unwind: '$visitedProperty' },
+				{ $unwind: '$visitedWatches' },
 				{
 					$facet: {
 						list: [
 							{ $skip: (page - 1) * limit },
 							{ $limit: limit },
 							lookUpVisit,
-							{ $unwind: '$visitedProperty.memberData' },
+							{ $unwind: '$visitedWatches.memberData' },
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
@@ -62,8 +62,8 @@ export class ViewService {
 			])
 			.exec();
 
-		const result: Properties = { list: [], metaCounter: data[0].metaCounter };
-		result.list = data[0].list.map((ele) => ele.visitedProperty);
+		const result: Watches = { list: [], metaCounter: data[0].metaCounter };
+		result.list = data[0].list.map((ele) => ele.visitedWatches);
 		return result;
 	}
 }

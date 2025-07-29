@@ -43,7 +43,7 @@ export class Watch {
   releaseDate?: Date;
 
   @Field(() => Int)
-  views: number;
+  watchViews: number;
 
   @Field(() => Int)
   likes: number;
@@ -61,7 +61,7 @@ export class Watch {
   description?: string;
 
   @Field(() => String)
-  sellerId: ObjectId;
+  memberId: ObjectId;
 
   @Field(() => Date, { nullable: true })
   soldAt?: Date;

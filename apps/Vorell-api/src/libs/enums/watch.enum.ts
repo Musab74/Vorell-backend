@@ -14,8 +14,8 @@ registerEnumType(WatchType, {
 export enum WatchStatus {
   IN_STOCK = 'IN_STOCK',
   OUT_OF_STOCK = 'OUT_OF_STOCK',
-  PREORDER = 'PREORDER',
-  DISCONTINUED = 'DISCONTINUED',
+  SOLD = 'SOLD',
+	DELETE = 'DELETE',
 }
 registerEnumType(WatchStatus, {
   name: 'WatchStatus',

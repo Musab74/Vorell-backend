@@ -19,10 +19,10 @@ export const availableOptions = ['isLimitedEdition'];
 export const availableWatchSorts = [
   'createdAt',
   'updatedAt',
-  'rank',
-  'views',
-  'likes',
-  'price',
+  'watchRank',
+  'watchViews',
+  'watchLikes',
+  'watchPrice',
 ];
 
 // ✅ Mongo helpers
@@ -110,7 +110,7 @@ export const lookupAuthMemberFollowed = (input: LookupAuthMemberFollowed) => {
 export const lookUpMember = {
   $lookup: {
     from: 'members',
-    localField: 'sellerId', // updated from memberId
+    localField: 'memberId', 
     foreignField: '_id',
     as: 'memberData',
   },
@@ -128,7 +128,7 @@ export const lookupFollowingData = {
 export const lookUpFavorite = {
 	$lookup: {
 		from: 'members',
-		localField: 'favoriteWatch.sellerId',
+		localField: 'favoriteWatch.memberId',
 		foreignField: '_id',
 		as: 'favoriteWatch.memberData',
 	},
@@ -137,7 +137,7 @@ export const lookUpFavorite = {
 export const lookUpVisit = {
 	$lookup: {
 		from: 'members',
-		localField: 'visitedWatch.sellerId',
+		localField: 'visitedWatch.',
 		foreignField: '_id',
 		as: 'visitedWatch.memberData',
 	},

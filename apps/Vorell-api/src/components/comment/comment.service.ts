@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { MemberService } from '../member/member.service';
-import { PropertyService } from '../watch/watch.service';
+import { WatchService } from '../watch/watch.service';
 import { BoardArticleService } from '../board-article/board-article.service';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
@@ -17,7 +17,7 @@ export class CommentService {
 	constructor(
 		@InjectModel('Comment') private readonly commentModel: Model<Comment>,
 		private memberService: MemberService,
-		private propertyService: PropertyService,
+		private watchService: WatchService,
 		private boardArticleService: BoardArticleService,
 	) {}
 
@@ -33,10 +33,10 @@ export class CommentService {
 		}
 
 		switch (input.commentGroup) {
-			case CommentGroup.PROPERTY:
-				await this.propertyService.propertyStatsEditor({
+			case CommentGroup.WATCH:
+				await this.watchService.watchStatsEditor({
 					_id: input.commentRefId,
-					targetKey: 'propertyComments',
+					targetKey: 'watchComments',
 					modifier: 1,
 				});
 				break;

@@ -3,22 +3,22 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ViewService } from '../view/view.service';
 import { Model, ObjectId, Types } from 'mongoose';
 import { MemberService } from '../member/member.service';
-import { AgentPropertiesInquiry, AllPropertiesInquiry, OrdinaryInquiry, PropertiesInquiry, PropertyInput, StoreWatchesInquiry } from '../../libs/DTO/watch/watch.input';
-import { Properties, Property } from '../../libs/DTO/watch/watch';
-import { PropertyStatus } from '../../libs/enums/watch.enum';
 import moment from 'moment';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
-import { PropertyUpdate } from '../../libs/DTO/watch/watchUpdate';
+import { WatchUpdate } from '../../libs/DTO/watch/watchUpdate';
 import { lookupAuthMemberLiked, lookUpMember, shapeId } from '../../libs/config';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
+import { AllWatchesInquiry, OrdinaryInquiry, StoreWatchesInquiry, Watch, WatchesInquiry, WatchInput } from '../../libs/DTO/watch/watch.input';
+import { WatchStatus } from '../../libs/enums/watch.enum';
+import { Watches } from '../../libs/DTO/watch/watch';
 
 @Injectable()
-export class PropertyService {
+export class WatchService {
     constructor(
-        @InjectModel('Property') private readonly propertyModel: Model<Property>,
+        @InjectModel('Watch') private readonly watchModel: Model<Watch>,
         private memberService: MemberService,
         private viewService: ViewService,
         private likeService: LikeService,
@@ -26,13 +26,13 @@ export class PropertyService {
 
     ) { }
 
-    // CREATE PROPERTY
-    public async createProperty(input: PropertyInput): Promise<Property> {
+    // CREATE Watch
+    public async createWatch(input: WatchInput): Promise<Watch> {
         try {
-            const result = await this.propertyModel.create(input);
+            const result = await this.watchModel.create(input);
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'storeWatches',
                 modifier: 1
             });
             return result;
@@ -42,72 +42,72 @@ export class PropertyService {
         }
     }
 
-    // GET PROPERTY
-    public async getProperty(memberId: ObjectId, propertyId: ObjectId): Promise<Property> {
+    // GET watch
+    public async getWatch(memberId: ObjectId, watchId: ObjectId): Promise<Watch> {
         const search: T = {
-            _id: propertyId,
-            propertyStatus: PropertyStatus.ACTIVE,
+            _id: watchId,
+            WatchStatus: WatchStatus.IN_STOCK,
         };
-        const targetProperty = await this.propertyModel.findOne(search).exec();
-        if (!targetProperty) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+        const targetWatch = await this.watchModel.findOne(search).exec();
+        if (!targetWatch) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
-			const viewInput = { memberId: memberId, viewRefId: propertyId, viewGroup: ViewGroup.PROPERTY };
+			const viewInput = { memberId: memberId, viewRefId: watchId, viewGroup: ViewGroup.WATCH };
 			const newView = await this.viewService.recordView(viewInput);
 			if (newView) {
-				await this.propertyStatsEditor({ _id: propertyId, targetKey: 'propertyViews', modifier: 1 });
-				targetProperty.propertyViews++;
+				await this.watchStatsEditor({ _id: watchId, targetKey: 'watchViews', modifier: 1 });
+				targetWatch.watchViews++;
 			}
 
-			targetProperty.memberData = await this.memberService.getMember(null as any, targetProperty.memberId);
+			targetWatch.memberData = await this.memberService.getMember(null as any, targetWatch.memberId);
 
 			// meLiked
-			const likeInput = { memberId: memberId, likeRefId: propertyId, likeGroup: LikeGroup.PROPERTY };
-			targetProperty.meLiked = await this.likeService.checkLikeExistence(likeInput);
+			const likeInput = { memberId: memberId, likeRefId: watchId, likeGroup: LikeGroup.WATCH };
+			targetWatch.meLiked = await this.likeService.checkLikeExistence(likeInput);
 		}
         
-        return targetProperty;
+        return targetWatch;
 
     }
 
-    // UPDATE PROPERTY
-    public async updateProperty(memberId: ObjectId, input: PropertyUpdate): Promise<Property> {
-        let { propertyStatus, soldAt, deletedAt } = input;
+	// UPDATE WATCH
+    public async updateWatch(memberId: ObjectId, input: WatchUpdate): Promise<Watch> {
+        let { watchStatus, soldAt, deletedAt } = input;
         const search: T = {
             _id: input._id,
             memberId: memberId,
-            propertyStatus: PropertyStatus.ACTIVE,
+            watchStatus: WatchStatus.IN_STOCK,
         };
-        if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
-        else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
+        if (watchStatus === WatchStatus.SOLD) soldAt = moment().toDate();
+        else if (watchStatus === WatchStatus.DELETE) deletedAt = moment().toDate();
 
-        const result: Property = await this.propertyModel.findOneAndUpdate(search, input, { new: true }).exec() as Property;
+        const result: Watch = await this.watchModel.findOneAndUpdate(search, input, { new: true }).exec() as Watch;
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
         if (soldAt || deletedAt) {
             await this.memberService.memberStatsEditor({
                 _id: memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'memberWatches',
                 modifier: -1,
             });
         }
         return result;
     }
 
-    // PROPERTY STATS EDITOR
-    public async propertyStatsEditor(input: StatisticModifier): Promise<Property> {
+    // watchStatsEditor
+    public async watchStatsEditor(input: StatisticModifier): Promise<Watch> {
         const { _id, targetKey, modifier } = input;
-        return await this.propertyModel.findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true }).exec() as Property;
+        return await this.watchModel.findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true }).exec() as Watch;
     }
 
     // GET PROPERTIES
-    public async getProperties(memberId: ObjectId, input: PropertiesInquiry): Promise<Properties> {
-        const match: T = { propertyStatus: PropertyStatus.ACTIVE };
+    public async getWatches(memberId: ObjectId, input: WatchesInquiry): Promise<Watches> {
+        const match: T = { WatchStatus: WatchStatus.IN_STOCK };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         this.shapeMatchQuery(match, input);
         console.log('match:', match);
 
-        const result = await this.propertyModel
+        const result = await this.watchModel
             .aggregate([
                 { $match: match },
                 { $sort: sort },
@@ -131,80 +131,68 @@ export class PropertyService {
     }
 
     //  Private method use only inside 
-    private shapeMatchQuery(
-        match: Record<string, any>,
-        input: PropertiesInquiry,
-    ): void {
+    private shapeMatchQuery(match: Record<string, any>, input: WatchesInquiry): void {
         const {
-            memberId,
-            locationList,
-            roomsList,
-            bedsList,
-            typeList,
-            periodsRange,
-            pricesRange,
-            squaresRange,
-            options,
-            text,
+          memberId,
+          originList,
+          typeList,
+          brandList,
+          periodsRange,
+          pricesRange,
+          options,
+          text,
         } = input.search;
-
+      
         if (memberId) match.memberId = shapeId(memberId);
-        if (locationList) match.propertyLocation = { $in: locationList };
-        if (roomsList) match.propertyRooms = { $in: roomsList };
-        if (bedsList) match.propertyBeds = { $in: bedsList };
-        if (typeList) match.propertyType = { $in: typeList };
-
-        if (pricesRange)
-            match.propertyPrice = {
-                $gte: pricesRange.start,
-                $lte: pricesRange.end,
-            };
-
-        if (periodsRange)
-            match.createdAt = {
-                $gte: periodsRange.start,
-                $lte: periodsRange.end,
-            };
-
-        if (squaresRange)
-            match.propertySquare = {
-                $gte: squaresRange.start,
-                $lte: squaresRange.end,
-            };
-
-        if (text)
-            match.propertyTitle = {
-                $regex: new RegExp(text, 'i'),
-            };
-
-        if (options) {
-            match['$or'] = options.map((ele) => {
-                return { [ele]: true };
-            });
+        if (originList && originList.length) match.watchOrigin = { $in: originList };
+        if (typeList && typeList.length) match.watchType = { $in: typeList };
+        if (brandList && brandList.length) match.brand = { $in: brandList };
+      
+        if (pricesRange) {
+          match.price = {
+            $gte: pricesRange.start,
+            $lte: pricesRange.end,
+          };
         }
-    }
+      
+        if (periodsRange) {
+          match.createdAt = {
+            $gte: periodsRange.start,
+            $lte: periodsRange.end,
+          };
+        }
+      
+        if (text) {
+          match.modelName = { $regex: new RegExp(text, 'i') };
+        }
+      
+        if (options && options.length) {
+          match['$or'] = options.map((option) => ({ [option]: true }));
+        }
+      } 
+      
 
     // GET FAVORITES
-	public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
-		return await this.likeService.getFavoriteProperties(memberId, input);
+	public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
+		return await this.likeService.getFavoriteWatches(memberId, input);
 	}
 
 	// GET VISITED
-	public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
-		return await this.viewService.getVisitedProperties(memberId, input);
+	public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
+		return await this.viewService.getVisitedWatches(memberId, input);
 	}
 
 
-    //   getStoreProperties
+    //   getStoreWatches
 
-    public async getStoreProperties(memberId: ObjectId, input: StoreWatchesInquiry): Promise<Properties> {
+    public async getStoreWatches(memberId: ObjectId, input: StoreWatchesInquiry): Promise<Watches> {
         const { watchStatus } = input.search;
-        if (watchStatus === PropertyStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+        if (watchStatus === WatchStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
-        const match: T = { memberId: memberId, propertyStatus: watchStatus ?? { $ne: PropertyStatus.DELETE } };
+        const match: T = { memberId: memberId, watchStatus: watchStatus ?? { $ne: WatchStatus.DELETE } };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-        const result = await this.propertyModel
+        const result = await this.watchModel
             .aggregate([
                 { $match: match },
                 {
@@ -229,36 +217,36 @@ export class PropertyService {
         return result[0];
     }
 
-    // LIKE TARGET PROPERTY
-	public async likeTargetProperty(memberId: ObjectId, likeRefId: ObjectId): Promise<Property> {
-		const target: any = await this.propertyModel
-			.findOne({ _id: likeRefId, propertyStatus: PropertyStatus.ACTIVE })
+    // LIKE TARGET watch
+	public async likeTargetWatch(memberId: ObjectId, likeRefId: ObjectId): Promise<Watch> {
+		const target: any = await this.watchModel
+			.findOne({ _id: likeRefId, watchStatus: WatchStatus.IN_STOCK })
 			.exec();
 		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
 		const input: any = {
 			memberId: memberId,
 			likeRefId: likeRefId,
-			likeGroup: LikeGroup.PROPERTY,
+			likeGroup: LikeGroup.WATCH,
 		};
 
 		const modifier: number = await this.likeService.toggleLike(input);
-		const result = await this.propertyStatsEditor({ _id: likeRefId, targetKey: 'propertyLikes', modifier: modifier });
+		const result = await this.watchStatsEditor({ _id: likeRefId, targetKey: 'watchLikes', modifier: modifier });
 		if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
 		return result;
 	}
 
 
-    // GET ALL PROPERTIES BY ADMIN
-    public async getAllPropertiesByAdmin(input: AllPropertiesInquiry): Promise<Properties> {
-        const { propertyStatus, propertyLocationList } = input.search;
+    // getAllWatchesByAdmin
+    public async getAllWatchesByAdmin(input: AllWatchesInquiry): Promise<Watches> {
+        const { watchStatus, originList } = input.search;
         const match: T = {};
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
-        if (propertyStatus) match.propertyStatus = propertyStatus;
-        if (propertyLocationList) match.propertyLocation = { $in: propertyLocationList };
+        if (watchStatus) match.watchStatus = watchStatus;
+        if (originList) match.originList = { $in: originList };
 
-        const result = await this.propertyModel.aggregate([
+        const result = await this.watchModel.aggregate([
             { $match: match },
             { $sort: sort },
             {
@@ -278,32 +266,32 @@ export class PropertyService {
         return result[0];
     }
 
-    // UPDATE PROPERTY BY ADMIN
-    public async updatePropertyByAdmin(input: PropertyUpdate): Promise<Property> {
-        let { propertyStatus, soldAt, deletedAt } = input;
+    // UPDATE WATCH BY ADMIN
+    public async updateWatchByAdmin(input: WatchUpdate): Promise<Watch> {
+        let { watchStatus, soldAt, deletedAt } = input;
         const search: T = {
             _id: input._id,
-            propertyStatus: PropertyStatus.ACTIVE,
+            watchStatus: WatchStatus.IN_STOCK,
         };
-        if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
-        else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
+        if (watchStatus === WatchStatus.SOLD) soldAt = moment().toDate();
+        else if (watchStatus === WatchStatus.DELETE) deletedAt = moment().toDate();
 
-        const result = await this.propertyModel.findOneAndUpdate(search, input, { new: true }).exec();
+        const result = await this.watchModel.findOneAndUpdate(search, input, { new: true }).exec();
         if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
         if (soldAt || deletedAt) {
             await this.memberService.memberStatsEditor({
                 _id: result.memberId,
-                targetKey: 'memberProperties',
+                targetKey: 'storeWatches',
                 modifier: -1,
             });
         }
         return result;
     }
 
-    // DELETE PROPERTY BY ADMIN
-    public async removePropertyByAdmin(propertyId: ObjectId): Promise<Property> {
-        const search: T = { _id: propertyId, propertyStatus: PropertyStatus.DELETE };
-        const result = await this.propertyModel.findOneAndDelete(search).exec();
+    // DELETE WATCH BY ADMIN
+    public async removeWatchByAdmin(watchId: ObjectId): Promise<Watch> {
+        const search: T = { _id: watchId, WatchStatus: WatchStatus.DELETE };
+        const result = await this.watchModel.findOneAndDelete(search).exec();
         if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
 
         return result;

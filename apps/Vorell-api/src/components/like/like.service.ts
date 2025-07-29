@@ -5,10 +5,10 @@ import { T } from '../../libs/types/common';
 import { Message } from '../../libs/enums/common.enum';
 import { LikeInput } from '../../libs/DTO/like/like.input';
 import { Like, MeLiked } from '../../libs/DTO/like/like';
-import { Properties } from '../../libs/DTO/watch/watch';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { OrdinaryInquiry } from '../../libs/DTO/watch/watch.input';
 import { lookUpFavorite } from '../../libs/config';
+import { Watches } from '../../libs/DTO/watch/watch';
 
 @Injectable()
 export class LikeService {
@@ -43,9 +43,9 @@ export class LikeService {
 		return result ? [{ memberId: memberId, likeRefId: likeRefId, myFavorite: true }] : [];
 	}
 
-	public async getFavoriteProperties(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
+	public async getFavoriteWatches(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
 		const { page, limit } = input;
-		const match: T = { likeGroup: LikeGroup.PROPERTY, memberId: memberId };
+		const match: T = { likeGroup: LikeGroup.WATCH, memberId: memberId };
 
 		const data: T = await this.likeModel
 			.aggregate([
@@ -53,20 +53,20 @@ export class LikeService {
 				{ $sort: { updatedAt: -1 } },
 				{
 					$lookup: {
-						from: 'properties',
+						from: 'watches',
 						localField: 'likeRefId',
 						foreignField: '_id',
-						as: 'favoriteProperty',
+						as: 'favoriteWatch',
 					},
 				},
-				{ $unwind: '$favoriteProperty' },
+				{ $unwind: '$favoriteWatch' },
 				{
 					$facet: {
 						list: [
 							{ $skip: (page - 1) * limit },
 							{ $limit: limit },
 							lookUpFavorite,
-							{ $unwind: '$favoriteProperty.memberData' },
+							{ $unwind: '$favoriteWatch.memberData' },
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
@@ -74,8 +74,8 @@ export class LikeService {
 			])
 			.exec();
 
-		const result: Properties = { list: [], metaCounter: data[0].metaCounter };
-		result.list = data[0].list.map((ele) => ele.favoriteProperty);
+		const result: Watches = { list: [], metaCounter: data[0].metaCounter };
+		result.list = data[0].list.map((ele) => ele.favoriteWatch);
 		return result;
 	}
 }
