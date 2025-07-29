@@ -1,14 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/Vorell-ap/src",
+  "sourceRoot": "apps/Vorell-api/src",
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
     "tsConfigPath": "apps/Vorell-api/tsconfig.app.json"
   },
   "monorepo": true,
-  "root": "apps/Vorell-ap",
+  "root": "apps/Vorell-api",
   "projects": {
     "Vorell-api": {
       "type": "application",

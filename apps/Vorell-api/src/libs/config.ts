@@ -24,6 +24,9 @@ export const availableWatchSorts = [
   'watchLikes',
   'watchPrice',
 ];
+export const availableBoardArticleSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews'];
+export const availableCommentSorts = ['createdAt', 'updatedAt'];
+
 
 // ✅ Mongo helpers
 export const shapeIntoMongoObjectId = (target: any) => {

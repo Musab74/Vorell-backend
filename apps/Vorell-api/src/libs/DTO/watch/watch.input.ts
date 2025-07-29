@@ -51,8 +51,8 @@ export class WatchInput {
   movement?: string;
 
   @IsOptional()
-  @Field(() => String, { nullable: true })
-  waterResistance?: string;
+  @Field(() => Number, { nullable: true })
+  waterResistance?: number;
 
   @IsOptional()
   @Field(() => Boolean, { nullable: true })
@@ -316,7 +316,7 @@ export class OrdinaryInquiry {
 // --------- OUTPUTS -----------
 
 @ObjectType()
-export class Watch {
+export class WatchOutput {
   @Field(() => String)
   _id: ObjectId;
 
@@ -395,8 +395,8 @@ export class Watch {
 
 @ObjectType()
 export class Watches {
-  @Field(() => [Watch])
-  list: Watch[];
+  @Field(() => [WatchOutput])
+  list: WatchOutput[];
 
   @Field(() => [TotalCounter], { nullable: true })
   metaCounter?: TotalCounter[];

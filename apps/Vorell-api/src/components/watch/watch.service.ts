@@ -11,9 +11,9 @@ import { WatchUpdate } from '../../libs/DTO/watch/watchUpdate';
 import { lookupAuthMemberLiked, lookUpMember, shapeId } from '../../libs/config';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
-import { AllWatchesInquiry, OrdinaryInquiry, StoreWatchesInquiry, Watch, WatchesInquiry, WatchInput } from '../../libs/DTO/watch/watch.input';
+import { AllWatchesInquiry, OrdinaryInquiry, StoreWatchesInquiry, WatchesInquiry, WatchInput } from '../../libs/DTO/watch/watch.input';
 import { WatchStatus } from '../../libs/enums/watch.enum';
-import { Watches } from '../../libs/DTO/watch/watch';
+import { Watch, Watches } from '../../libs/DTO/watch/watch';
 
 @Injectable()
 export class WatchService {
