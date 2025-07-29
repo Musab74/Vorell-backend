@@ -45,7 +45,7 @@ const MemberSchema = new Schema({
   memberDesc: {
     type: String,
   },
-  memberProperties: {
+  storeWatches: {
     type:Number,
     default: 0,
   },

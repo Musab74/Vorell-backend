@@ -41,7 +41,7 @@ export class Member {
     memberDesc?:string
 
     @Field(() => String)
-    memberProperties?:number;
+    storeWatches?:number;
 
     @Field(() => Int)
     memberArticles:number

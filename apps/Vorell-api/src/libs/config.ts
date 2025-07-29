@@ -106,7 +106,7 @@ export const lookupAuthMemberFollowed = (input: LookupAuthMemberFollowed) => {
   };
 };
 
-// ✅ Watch lookup (previously property)
+// ✅ Watch lookup 
 export const lookUpMember = {
   $lookup: {
     from: 'members',

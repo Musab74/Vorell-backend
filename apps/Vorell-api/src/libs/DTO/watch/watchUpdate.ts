@@ -3,7 +3,7 @@ import { IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
 import { WatchOrigin, WatchStatus, WatchType } from '../../enums/watch.enum';
 
 @InputType()
-export class WatchUpdateInput {
+export class WatchUpdate{
   @IsNotEmpty()
   @Field(() => ID)
   _id: string;

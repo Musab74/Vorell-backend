@@ -75,7 +75,7 @@ export class WatchInput {
 }
 
 @InputType()
-export class WatchUpdateInput {
+export class Input {
   @IsNotEmpty()
   @Field(() => ID)
   _id: string;

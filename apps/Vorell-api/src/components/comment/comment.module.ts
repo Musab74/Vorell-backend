@@ -5,14 +5,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import CommentSchema from '../../schemas/Comment.model';
 import { AuthModule } from '../auth/auth.module';
 import { MemberModule } from '../member/member.module';
-import { PropertyModule } from '../property/watch.module';
+import { WatchModule } from '../watch/watch.module';
 import { BoardArticleModule } from '../board-article/board-article.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{name : "Comment" , schema: CommentSchema}]),
      AuthModule, 
-     PropertyModule,
+     WatchModule,
      BoardArticleModule,
      MemberModule,
   ],
