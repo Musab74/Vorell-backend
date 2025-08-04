@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ViewService } from '../view/view.service';
-import { Model, ObjectId, Types } from 'mongoose';
+import { Model, ObjectId } from 'mongoose';
 import { MemberService } from '../member/member.service';
 import moment from 'moment';
 import { StatisticModifier, T } from '../../libs/types/common';
@@ -99,9 +99,9 @@ export class WatchService {
         return await this.watchModel.findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true }).exec() as Watch;
     }
 
-    // GET PROPERTIES
+    // GET watches
     public async getWatches(memberId: ObjectId, input: WatchesInquiry): Promise<Watches> {
-        const match: T = { WatchStatus: WatchStatus.IN_STOCK };
+        const match: T = { watchStatus: WatchStatus.IN_STOCK };
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         this.shapeMatchQuery(match, input);

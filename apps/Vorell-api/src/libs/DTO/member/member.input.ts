@@ -76,7 +76,7 @@ export class StoresInquiry {
     @Field(()=> Direction, {nullable:true})
     direction?:Direction;
 
-    @IsNotEmpty()
+    @IsOptional()
     @Field(()=> AISearch)
     search:AISearch;
 }

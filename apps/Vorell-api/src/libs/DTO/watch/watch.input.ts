@@ -8,9 +8,11 @@ import {
   Min,
 } from 'class-validator';
 import {
+  movement,
   WatchOrigin,
   WatchStatus,
   WatchType,
+
 } from '../../enums/watch.enum';
 import { ObjectId } from 'mongoose';
 import { Direction } from '../../enums/common.enum';
@@ -48,7 +50,7 @@ export class WatchInput {
 
   @IsOptional()
   @Field(() => String, { nullable: true })
-  movement?: string;
+  movement?: movement;
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
@@ -313,91 +315,8 @@ export class OrdinaryInquiry {
   limit: number;
 }
 
-// --------- OUTPUTS -----------
-
-@ObjectType()
-export class WatchOutput {
-  @Field(() => String)
-  _id: ObjectId;
-
-  @Field(() => WatchType)
-  watchType: WatchType;
-
-  @Field(() => WatchStatus)
-  watchStatus: WatchStatus;
-
-  @Field(() => WatchOrigin)
-  watchOrigin: WatchOrigin;
-
-  @Field(() => String)
-  modelName: string;
-
-  @Field(() => String)
-  brand: string;
-
-  @Field(() => Number)
-  price: number;
-
-  @Field(() => Number, { nullable: true })
-  caseDiameter?: number;
-
-  @Field(() => String, { nullable: true })
-  movement?: string;
-
-  @Field(() => String, { nullable: true })
-  waterResistance?: string;
-
-  @Field(() => Boolean)
-  isLimitedEdition: boolean;
-
-  @Field(() => Date, { nullable: true })
-  releaseDate?: Date;
-
-  @Field(() => Int)
-  watchViews: number;
-
-  @Field(() => Int)
-  likes: number;
-
-  @Field(() => Int)
-  comments: number;
-
-  @Field(() => Int)
-  rank: number;
-
-  @Field(() => [String])
-  images: string[];
-
-  @Field(() => String, { nullable: true })
-  description?: string;
-
-  @Field(() => String)
-  memberId: ObjectId;
-
-  @Field(() => Date, { nullable: true })
-  soldAt?: Date;
-
-  @Field(() => Date, { nullable: true })
-  deletedAt?: Date;
-
-  @Field(() => Date)
-  createdAt: Date;
-
-  @Field(() => Date)
-  updatedAt: Date;
-
-  @Field(() => Member, { nullable: true })
-  memberData?: Member;
-
-  @Field(() => [MeLiked], { nullable: true })
-  meLiked?: MeLiked[];
-}
-
 @ObjectType()
 export class Watches {
-  @Field(() => [WatchOutput])
-  list: WatchOutput[];
-
   @Field(() => [TotalCounter], { nullable: true })
   metaCounter?: TotalCounter[];
 }

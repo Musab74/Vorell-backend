@@ -91,7 +91,7 @@ const WatchSchema = new Schema(
     memberId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'Store', // or 'User' model reference
+      ref: 'Store', 
     },
 
     soldAt: {
