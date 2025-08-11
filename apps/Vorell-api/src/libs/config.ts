@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import { T } from "./types/common";
 
-export const availableStoreSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank"];
+export const availableStoreSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank", "storeWatches"];
 export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
 
 // ✅ Image configuration
@@ -20,6 +20,7 @@ export const availableWatchSorts = [
   'createdAt',
   'updatedAt',
   'watchRank',
+  'islimitedEdition',
   'watchViews',
   'watchLikes',
   'watchPrice',
@@ -140,7 +141,7 @@ export const lookUpFavorite = {
 export const lookUpVisit = {
 	$lookup: {
 		from: 'members',
-		localField: 'visitedWatch.',
+		localField: 'visitedWatch',
 		foreignField: '_id',
 		as: 'visitedWatch.memberData',
 	},

@@ -48,3 +48,24 @@ export enum WatchOrigin {
 registerEnumType(WatchOrigin, {
   name: 'WatchOrigin',
 });
+
+
+export enum WatchBrand {
+  ROLEX = "Rolex",
+  PATEK_PHILIPPE = "Patek Philippe",
+  AUDEMARS_PIGUET = "Audemars Piguet",
+  OMEGA = "Omega",
+  RICHARD_MILLE = "Richard Mille",
+  JAEGER_LECOULTRE = "Jaeger-LeCoultre",
+  VACHERON_CONSTANTIN = "Vacheron Constantin",
+  CARTIER = "Cartier",
+  BREITLING = "Breitling",
+  HUBLOT = "Hublot",
+  TAG_HEUER = "TAG Heuer",
+  BREGUET = "Breguet",
+  PANERAI = "Panerai",
+  APPLE = "Apple",          
+  SAMSUNG = "Samsung",       
+  GARMIN = "Garmin"           
+}
+

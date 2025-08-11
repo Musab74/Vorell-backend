@@ -40,6 +40,15 @@ export class CommentService {
 					modifier: 1,
 				});
 				break;
+
+			case CommentGroup.STORE:
+				await this.watchService.watchStatsEditor({
+					_id: input.commentRefId,
+					targetKey: 'storeComments',
+					modifier: 1,
+				});
+				break;
+
 			case CommentGroup.ARTICLE:
 				await this.boardArticleService.boardArticleStatsEditor({
 					_id: input.commentRefId,

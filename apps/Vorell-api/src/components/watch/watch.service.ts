@@ -8,7 +8,7 @@ import { StatisticModifier, T } from '../../libs/types/common';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { WatchUpdate } from '../../libs/DTO/watch/watchUpdate';
-import { lookupAuthMemberLiked, lookUpMember, shapeId } from '../../libs/config';
+import { lookupAuthMemberLiked, lookUpMember, shapeId, shapeIntoMongoObjectId } from '../../libs/config';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
 import { AllWatchesInquiry, OrdinaryInquiry, StoreWatchesInquiry, WatchesInquiry, WatchInput } from '../../libs/DTO/watch/watch.input';
@@ -46,9 +46,16 @@ export class WatchService {
     public async getWatch(memberId: ObjectId, watchId: ObjectId): Promise<Watch> {
         const search: T = {
             _id: watchId,
-            WatchStatus: WatchStatus.IN_STOCK,
+            watchStatus: WatchStatus.IN_STOCK,
         };
+        // const search: T = { _id: watchId };
+        console.log('SEARCH OBJECT:', search);
+
         const targetWatch = await this.watchModel.findOne(search).exec();
+        console.log('RESULT:', targetWatch);
+        console.log("Looking for member:", memberId, typeof memberId);
+
+
         if (!targetWatch) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
@@ -59,7 +66,7 @@ export class WatchService {
 				targetWatch.watchViews++;
 			}
 
-			targetWatch.memberData = await this.memberService.getMember(null as any, targetWatch.memberId);
+            targetWatch.memberData = await this.memberService.getMember(targetWatch.memberId , null as any);
 
 			// meLiked
 			const likeInput = { memberId: memberId, likeRefId: watchId, likeGroup: LikeGroup.WATCH };
@@ -105,7 +112,10 @@ export class WatchService {
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
         this.shapeMatchQuery(match, input);
-        console.log('match:', match);
+
+        if (input?.search?.isLimitedEdition !== undefined) {
+            match.isLimitedEdition = input.search.isLimitedEdition;
+        }
 
         const result = await this.watchModel
             .aggregate([
@@ -185,37 +195,42 @@ export class WatchService {
 
     //   getStoreWatches
 
-    public async getStoreWatches(memberId: ObjectId, input: StoreWatchesInquiry): Promise<Watches> {
-        const { watchStatus } = input.search;
+    public async getStoreWatches(input: StoreWatchesInquiry): Promise<Watches> {
+        const { watchStatus, memberId } = input.search; 
         if (watchStatus === WatchStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+      
+        // Use memberId from input, not from auth!
+        const match: T = {
+          ...(memberId ? { memberId:shapeIntoMongoObjectId(memberId) } : {}),
+          watchStatus: watchStatus ?? { $ne: WatchStatus.DELETE },
+        };
 
-        const match: T = { memberId: memberId, watchStatus: watchStatus ?? { $ne: WatchStatus.DELETE } };
+      
         const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
-
+      
         const result = await this.watchModel
-            .aggregate([
-                { $match: match },
-                {
-                    $sort: sort,
-                },
-                {
-                    $facet: {
-                        list: [
-                            { $skip: (input.page - 1) * input.limit },
-                            { $limit: input.limit },
-                            lookUpMember,
-                            { $unwind: '$memberData' },
-                        ],
-                        metaCounter: [{ $count: 'total' }],
-                    },
-                },
-            ])
-            .exec();
-
+          .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+              $facet: {
+                list: [
+                  { $skip: (input.page - 1) * input.limit },
+                  { $limit: input.limit },
+                  lookUpMember,
+                  { $unwind: '$memberData' },
+                ],
+                metaCounter: [{ $count: 'total' }],
+              },
+            },
+          ])
+          .exec();
+      
         if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-
+      
         return result[0];
-    }
+      }
+      
 
     // LIKE TARGET watch
 	public async likeTargetWatch(memberId: ObjectId, likeRefId: ObjectId): Promise<Watch> {

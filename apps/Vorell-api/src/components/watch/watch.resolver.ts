@@ -89,15 +89,16 @@ export class WatchResolver {
 	}
 
 	// GET STORE WATCHES
+	
 	@Roles(MemberType.STORE)
 	@UseGuards(RolesGuard)
 	@Query(() => Watches)
 	public async getStoreWatches(
 		@Args('input') input: StoreWatchesInquiry,
-		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Watches> {
-		console.log('Query: getStoreWatches');
-		return await this.watchService.getStoreWatches(memberId, input);
+		console.log('getStoreWatches input:', input);
+		console.log('getStoreWatches search:', input.search);
+		return await this.watchService.getStoreWatches( input);
 	}
 
 	// LIKE TARGET watch

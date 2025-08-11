@@ -204,6 +204,10 @@ class WatchSearchInput {
   @IsOptional()
   @Field(() => String, { nullable: true })
   text?: string;
+
+  @IsOptional()
+  @Field(() => Boolean, { nullable: true })
+  isLimitedEdition?: boolean; 
 }
 
 @InputType()
@@ -274,6 +278,10 @@ class StoreWatchSearchInput {
   @IsOptional()
   @Field(() => WatchStatus, { nullable: true })
   watchStatus?: WatchStatus;
+
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  memberId?: string;
 }
 
 @InputType()

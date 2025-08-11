@@ -1,12 +1,11 @@
-
 import { Mutation, Resolver, Query, Args } from '@nestjs/graphql';
 import { MemberService } from './member.service';
 import { Member, Members } from '../../libs/DTO/member/member';
-import {  LoginInput, MemberInput, MembersInquiry, StoresInquiry } from '../../libs/DTO/member/member.input';
+import { LoginInput, MemberInput, MembersInquiry, StoresInquiry } from '../../libs/DTO/member/member.input';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
-import { ObjectId, Types } from 'mongoose';
+import { ObjectId } from 'mongoose';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -21,13 +20,11 @@ export class MemberResolver {
 	//mutation = post
 	@Mutation(() => Member)
 	public async signup(@Args('input') input: MemberInput): Promise<Member> {
-		console.log('Mutation: signup');
 		return await this.memberService.signup(input);
 	}
 
 	@Mutation(() => Member)
 	public async login(@Args('input') input: LoginInput): Promise<Member> {
-		console.log('Mutation: login');
 		return await this.memberService.login(input);
 	}
 
@@ -39,7 +36,6 @@ export class MemberResolver {
 		input: MemberUpdate,
 		@AuthMember("_id") memberId: ObjectId): Promise<Member> {
 		delete input._id;
-		console.log('updateMember');
 		return this.memberService.updateMember(memberId, input);
 	}
 
@@ -49,9 +45,8 @@ export class MemberResolver {
 		@Args('memberId') input: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Member> {
-		console.log('Query: getMember');
 		const targetId = shapeIntoMongoObjectId(input);
-		return await this.memberService.getMember(memberId, targetId);
+		return await this.memberService.getMember(targetId, memberId);
 	}
 
 	@UseGuards(WithoutGuard)
@@ -60,7 +55,6 @@ export class MemberResolver {
 		@Args('input') input: StoresInquiry,
 		@AuthMember('_id') memberId: ObjectId, //
 	): Promise<Members> {
-		console.log('💬 RECEIVED INPUT:', input);
 		return await this.memberService.getStores(memberId, input);
 	}
 
@@ -70,7 +64,6 @@ export class MemberResolver {
 	@UseGuards(RolesGuard)
 	@Query(() => Members)
 	public async getAllMembersByAdmin(@Args('input') input: MembersInquiry): Promise<Members> {
-		console.log('Query: getAllMembersByAdmin');
 		return await this.memberService.getAllMembersByAdmin(input);
 	}
 
@@ -81,7 +74,6 @@ export class MemberResolver {
 		@Args('memberId') input: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Member> {
-		console.log('Mutation: likeTargetMember');
 		const likeRefId = shapeIntoMongoObjectId(input);
 		return await this.memberService.likeTargetMember(memberId, likeRefId);
 	}
@@ -91,7 +83,6 @@ export class MemberResolver {
 	@UseGuards(RolesGuard)
 	@Mutation(() => Member)
 	public async updateMemberByAdmin(@Args('input') input: MemberUpdate): Promise<Member> {
-		console.log('Mutation: updateMemberByAdmin');
 		return await this.memberService.updateMemberByAdmin(input);
 	}
 

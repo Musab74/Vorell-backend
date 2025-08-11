@@ -125,10 +125,9 @@ export class MemberService {
     public async getStores(memberId: ObjectId, input: StoresInquiry): Promise<Members> {
         const text = input.search?.text;
         const match: T = { memberType: MemberType.STORE, memberStatus: MemberStatus.ACTIVE };
-        const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+        const sort: T = { [input?.sort ?? 'storeWatches']: input?.direction ?? Direction.DESC };
 
         if (text) match.memberNick = { $regex: new RegExp(text, 'i') };
-        console.log('match:', match);
 
         const result = await this.memberModel.aggregate([
             { $match: match },
