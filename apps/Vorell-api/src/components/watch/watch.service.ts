@@ -59,25 +59,25 @@ export class WatchService {
         if (!targetWatch) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
         if (memberId) {
-			const viewInput = { memberId: memberId, viewRefId: watchId, viewGroup: ViewGroup.WATCH };
-			const newView = await this.viewService.recordView(viewInput);
-			if (newView) {
-				await this.watchStatsEditor({ _id: watchId, targetKey: 'watchViews', modifier: 1 });
-				targetWatch.watchViews++;
-			}
+            const viewInput = { memberId: memberId, viewRefId: watchId, viewGroup: ViewGroup.WATCH };
+            const newView = await this.viewService.recordView(viewInput);
+            if (newView) {
+                await this.watchStatsEditor({ _id: watchId, targetKey: 'watchViews', modifier: 1 });
+                targetWatch.watchViews++;
+            }
 
-            targetWatch.memberData = await this.memberService.getMember(targetWatch.memberId , null as any);
+            targetWatch.memberData = await this.memberService.getMember(targetWatch.memberId, null as any);
 
-			// meLiked
-			const likeInput = { memberId: memberId, likeRefId: watchId, likeGroup: LikeGroup.WATCH };
-			targetWatch.meLiked = await this.likeService.checkLikeExistence(likeInput);
-		}
-        
+            // meLiked
+            const likeInput = { memberId: memberId, likeRefId: watchId, likeGroup: LikeGroup.WATCH };
+            targetWatch.meLiked = await this.likeService.checkLikeExistence(likeInput);
+        }
+
         return targetWatch;
 
     }
 
-	// UPDATE WATCH
+    // UPDATE WATCH
     public async updateWatch(memberId: ObjectId, input: WatchUpdate): Promise<Watch> {
         let { watchStatus, soldAt, deletedAt } = input;
         const search: T = {
@@ -127,7 +127,7 @@ export class WatchService {
                             { $skip: (input.page - 1) * input.limit },
                             { $limit: input.limit },
                             // meLiked
-							lookupAuthMemberLiked(memberId),
+                            lookupAuthMemberLiked(memberId),
                         ],
                         metaCounter: [{ $count: 'total' }],
                     },
@@ -143,82 +143,102 @@ export class WatchService {
     //  Private method use only inside 
     private shapeMatchQuery(match: Record<string, any>, input: WatchesInquiry): void {
         const {
-          memberId,
-          originList,
-          typeList,
-          brandList,
-          periodsRange,
-          pricesRange,
-          options,
-          text,
+            memberId,
+            originList,
+            typeList,
+            brandList,
+            periodsRange,
+            pricesRange,
+            options,
+            text,
         } = input.search;
-      
+
         if (memberId) match.memberId = shapeId(memberId);
         if (originList && originList.length) match.watchOrigin = { $in: originList };
         if (typeList && typeList.length) match.watchType = { $in: typeList };
         if (brandList && brandList.length) match.brand = { $in: brandList };
-      
+
         if (pricesRange) {
-          match.price = {
-            $gte: pricesRange.start,
-            $lte: pricesRange.end,
-          };
+            match.price = {
+                $gte: pricesRange.start,
+                $lte: pricesRange.end,
+            };
         }
-      
+
         if (periodsRange) {
-          match.createdAt = {
-            $gte: periodsRange.start,
-            $lte: periodsRange.end,
-          };
+            match.createdAt = {
+                $gte: periodsRange.start,
+                $lte: periodsRange.end,
+            };
         }
-      
+
         if (text) {
-          match.modelName = { $regex: new RegExp(text, 'i') };
+            match.modelName = { $regex: new RegExp(text, 'i') };
         }
-      
+
         if (options && options.length) {
-          match['$or'] = options.map((option) => ({ [option]: true }));
+            match['$or'] = options.map((option) => ({ [option]: true }));
         }
-      } 
-      
+    }
+
 
     // GET FAVORITES
-	public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
-		return await this.likeService.getFavoriteWatches(memberId, input);
-	}
+    public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
+        return await this.likeService.getFavoriteWatches(memberId, input);
+    }
 
-	// GET VISITED
-	public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
-		return await this.viewService.getVisitedWatches(memberId, input);
-	}
+    // GET VISITED
+    public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
+        return await this.viewService.getVisitedWatches(memberId, input);
+    }
 
 
     //   getStoreWatches
 
+    // Service
     public async getStoreWatches(input: StoreWatchesInquiry): Promise<Watches> {
-        const { watchStatus, memberId } = input.search; 
-        if (watchStatus === WatchStatus.DELETE) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+        const {
+          page,
+          limit,
+          sort = 'createdAt',
+          direction = Direction.DESC,
+          search = {} as any,
+        } = input;
       
-        // Use memberId from input, not from auth!
+        const { memberId, watchStatus } = search;
+      
+        // If still missing (auth not wired), don't miscount: return empty.
+        if (!memberId) {
+          console.warn('[getStoreWatches] missing memberId; returning empty.');
+          return { list: [], metaCounter: [{ total: 0 }] } as any;
+        }
+      
+        // handle both string/ObjectId
+        const memberObjId =
+          typeof memberId === 'string' ? shapeIntoMongoObjectId(memberId) : memberId;
+      
         const match: T = {
-          ...(memberId ? { memberId:shapeIntoMongoObjectId(memberId) } : {}),
-          watchStatus: watchStatus ?? { $ne: WatchStatus.DELETE },
+          memberId: memberObjId,
+          watchStatus: watchStatus ?? WatchStatus.IN_STOCK, // default
+          // deletedAt: null   // optional; if you soft-delete, keep this. It matches null or missing by default.
         };
-
       
-        const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+        const sortStage: T = { [sort]: direction };
       
-        const result = await this.watchModel
+        console.log('[getStoreWatches] match =>', match);
+      
+        const [agg] = await this.watchModel
           .aggregate([
             { $match: match },
-            { $sort: sort },
+            { $sort: sortStage },
             {
               $facet: {
                 list: [
-                  { $skip: (input.page - 1) * input.limit },
-                  { $limit: input.limit },
+                  { $skip: (page - 1) * limit },
+                  { $limit: limit },
                   lookUpMember,
-                  { $unwind: '$memberData' },
+                  // Do NOT drop rows if lookup fails
+                  { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
                 ],
                 metaCounter: [{ $count: 'total' }],
               },
@@ -226,30 +246,34 @@ export class WatchService {
           ])
           .exec();
       
-        if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-      
-        return result[0];
+        return {
+          list: agg?.list ?? [],
+          metaCounter: agg?.metaCounter?.length ? agg.metaCounter : [{ total: 0 }],
+        } as any;
       }
       
+      
+
+
 
     // LIKE TARGET watch
-	public async likeTargetWatch(memberId: ObjectId, likeRefId: ObjectId): Promise<Watch> {
-		const target: any = await this.watchModel
-			.findOne({ _id: likeRefId, watchStatus: WatchStatus.IN_STOCK })
-			.exec();
-		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    public async likeTargetWatch(memberId: ObjectId, likeRefId: ObjectId): Promise<Watch> {
+        const target: any = await this.watchModel
+            .findOne({ _id: likeRefId, watchStatus: WatchStatus.IN_STOCK })
+            .exec();
+        if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-		const input: any = {
-			memberId: memberId,
-			likeRefId: likeRefId,
-			likeGroup: LikeGroup.WATCH,
-		};
+        const input: any = {
+            memberId: memberId,
+            likeRefId: likeRefId,
+            likeGroup: LikeGroup.WATCH,
+        };
 
-		const modifier: number = await this.likeService.toggleLike(input);
-		const result = await this.watchStatsEditor({ _id: likeRefId, targetKey: 'watchLikes', modifier: modifier });
-		if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
-		return result;
-	}
+        const modifier: number = await this.likeService.toggleLike(input);
+        const result = await this.watchStatsEditor({ _id: likeRefId, targetKey: 'likes', modifier: modifier });
+        if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
+        return result;
+    }
 
 
     // getAllWatchesByAdmin

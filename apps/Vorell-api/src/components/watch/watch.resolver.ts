@@ -6,7 +6,7 @@ import { AllWatchesInquiry, OrdinaryInquiry, StoreWatchesInquiry, WatchesInquiry
 import { ObjectId } from 'mongoose';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import {  Watch, Watches } from '../../libs/DTO/watch/watch';
+import { Watch, Watches } from '../../libs/DTO/watch/watch';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { shapeIntoMongoObjectId } from '../../libs/config';
 import { AuthGuard } from '../auth/guards/auth.guard';
@@ -15,7 +15,7 @@ import { WatchService } from './watch.service';
 
 @Resolver()
 export class WatchResolver {
-	constructor(private readonly watchService: WatchService) {}
+	constructor(private readonly watchService: WatchService) { }
 
 	// CREATE Watch
 	@Roles(MemberType.STORE)
@@ -68,7 +68,7 @@ export class WatchResolver {
 
 	// GET FAVORITES
 	@UseGuards(AuthGuard)
-	@Query(() => Watches)
+	@Query((returns) => Watches)
 	public async getFavorites(
 		@Args('input') input: OrdinaryInquiry,
 		@AuthMember('_id') memberId: ObjectId,
@@ -84,22 +84,31 @@ export class WatchResolver {
 		@Args('input') input: OrdinaryInquiry,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Watches> {
-		console.log('Query: getVisited');
-		return await this.watchService.getVisited(memberId, input);
+		const response = await this.watchService.getVisited(memberId, input);
+		return response;
 	}
 
+
 	// GET STORE WATCHES
-	
+
 	@Roles(MemberType.STORE)
-	@UseGuards(RolesGuard)
-	@Query(() => Watches)
-	public async getStoreWatches(
-		@Args('input') input: StoreWatchesInquiry,
-	): Promise<Watches> {
-		console.log('getStoreWatches input:', input);
-		console.log('getStoreWatches search:', input.search);
-		return await this.watchService.getStoreWatches( input);
-	}
+@UseGuards(RolesGuard)
+@Query(() => Watches)
+public async getStoreWatches(
+  @Args('input') input: StoreWatchesInquiry,
+  @AuthMember() me: { _id: any }, // whatever your decorator returns
+): Promise<Watches> {
+  const ensured: StoreWatchesInquiry = {
+    ...input,
+    search: {
+      ...(input.search ?? {}),
+      memberId: input?.search?.memberId || (me?._id?.toString?.() ?? me?._id),
+    },
+  };
+  
+  return this.watchService.getStoreWatches(ensured);
+}
+
 
 	// LIKE TARGET watch
 	@UseGuards(AuthGuard)

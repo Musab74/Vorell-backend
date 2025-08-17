@@ -1,13 +1,13 @@
 import { registerEnumType } from '@nestjs/graphql';
 
 // Watch Movement (was WatchType)
-export enum movement {
+export enum Movement {
   MECHANICAL = 'MECHANICAL',
   AUTOMATIC = 'AUTOMATIC',
   QUARTZ = 'QUARTZ',
 }
-registerEnumType(movement, {
-  name: 'movement',
+registerEnumType(Movement, {
+  name: 'Movement',
 });
 
 // Watch Category/Type/Style (new enum)
@@ -48,6 +48,16 @@ export enum WatchOrigin {
 registerEnumType(WatchOrigin, {
   name: 'WatchOrigin',
 });
+
+export enum CaseDiameter {
+  MM36 = 'MM36',
+  MM38 = 'MM38',
+  MM40 = 'MM40',
+  MM42 = 'MM42',
+  MM44 = 'MM44',
+  OTH  = 'OTH',
+}
+registerEnumType(CaseDiameter, { name: 'CaseDiameter' });
 
 
 export enum WatchBrand {

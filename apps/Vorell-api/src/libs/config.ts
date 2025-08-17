@@ -22,7 +22,7 @@ export const availableWatchSorts = [
   'watchRank',
   'islimitedEdition',
   'watchViews',
-  'watchLikes',
+  'likes',
   'watchPrice',
 ];
 export const availableBoardArticleSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews'];

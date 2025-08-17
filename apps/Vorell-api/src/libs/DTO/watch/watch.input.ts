@@ -8,7 +8,8 @@ import {
   Min,
 } from 'class-validator';
 import {
-  movement,
+  CaseDiameter,
+  Movement,
   WatchOrigin,
   WatchStatus,
   WatchType,
@@ -45,12 +46,12 @@ export class WatchInput {
   price: number;
 
   @IsOptional()
-  @Field(() => Int, { nullable: true })
-  caseDiameter?: number;
+  @Field(() => CaseDiameter, { nullable: true })
+  caseDiameter?: CaseDiameter;
 
   @IsOptional()
-  @Field(() => String, { nullable: true })
-  movement?: movement;
+  @Field(() => Movement, { nullable: true })
+  movement?: Movement;
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
@@ -109,18 +110,18 @@ export class Input {
   price?: number;
 
   @IsOptional()
-  @Field(() => Number, { nullable: true })
-  caseDiameter?: number;
+  @Field(() => CaseDiameter, { nullable: true })
+  caseDiameter?: CaseDiameter[];
+
+  @IsOptional()
+  @Length(2, 100)
+  @Field(() => Movement, { nullable: true })
+  movement?: Movement[];
 
   @IsOptional()
   @Length(2, 100)
   @Field(() => String, { nullable: true })
-  movement?: string;
-
-  @IsOptional()
-  @Length(2, 100)
-  @Field(() => String, { nullable: true })
-  waterResistance?: string;
+  waterResistance?: number;
 
   @IsOptional()
   @Field(() => [String], { nullable: true })
@@ -172,43 +173,39 @@ export class PeriodsRange {
 
 @InputType()
 class WatchSearchInput {
-  @IsOptional()
-  @Field(() => String, { nullable: true })
-  memberId?: ObjectId;
+  @IsOptional() @Field(() => String, { nullable: true }) memberId?: ObjectId;
 
-  @IsOptional()
-  @Field(() => [WatchOrigin], { nullable: true })
+  @IsOptional() @Field(() => [WatchOrigin], { nullable: true })
   originList?: WatchOrigin[];
 
-  @IsOptional()
-  @Field(() => [WatchType], { nullable: true })
+  @IsOptional() @Field(() => [WatchType], { nullable: true })
   typeList?: WatchType[];
 
-  @IsOptional()
-  @Field(() => [String], { nullable: true })
+  @IsOptional() @Field(() => [String], { nullable: true })
   brandList?: string[];
 
-  @IsOptional()
-  @IsIn(availableOptions, { each: true })
-  @Field(() => [String], { nullable: true })
-  options?: string[];
-
-  @IsOptional()
-  @Field(() => PricesRange, { nullable: true })
+  @IsOptional() @Field(() => PricesRange, { nullable: true })
   pricesRange?: PricesRange;
 
-  @IsOptional()
-  @Field(() => PeriodsRange, { nullable: true })
+  @IsOptional() @Field(() => PeriodsRange, { nullable: true })
   periodsRange?: PeriodsRange;
 
-  @IsOptional()
-  @Field(() => String, { nullable: true })
+  @IsOptional() @Field(() => String, { nullable: true })
   text?: string;
 
-  @IsOptional()
-  @Field(() => Boolean, { nullable: true })
-  isLimitedEdition?: boolean; 
+  @IsOptional() @Field(() => WatchStatus, { nullable: true })
+  watchStatus?: WatchStatus;  // ✅ enum, not String
+
+  @IsOptional() @Field(() => [Movement], { nullable: true })
+  movement?: Movement[];      // ✅ ARRAY
+
+  @IsOptional() @Field(() => [CaseDiameter], { nullable: true })
+  caseDiameter?: CaseDiameter[]; // ✅ ARRAY
+
+  @IsOptional() @Field(() => Boolean, { nullable: true })
+  isLimitedEdition?: boolean;
 }
+
 
 @InputType()
 export class WatchesInquiry {
@@ -306,7 +303,7 @@ export class StoreWatchesInquiry {
   direction?: Direction;
 
   @IsNotEmpty()
-  @Field(() => WatchSearchInput)
+  @Field(() => StoreWatchSearchInput)
   search: StoreWatchSearchInput;
 }
 

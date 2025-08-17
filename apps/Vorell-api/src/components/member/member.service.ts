@@ -2,7 +2,6 @@ import {
     BadRequestException,
     Injectable,
     InternalServerErrorException,
-    UseGuards,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -16,12 +15,7 @@ import { MemberUpdate } from '../../libs/DTO/member/update.member';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
-import { GraphQLUpload, FileUpload } from 'graphql-upload';
-import { createWriteStream } from 'fs';
-import { getSerialForImage, lookupAuthMemberLiked, validMimeTypes } from '../../libs/config';
-import { Args, Mutation } from '@nestjs/graphql';
-import { AuthGuard } from '../auth/guards/auth.guard';
-import { LikeInput } from '../../libs/DTO/like/like.input';
+import { lookupAuthMemberLiked } from '../../libs/config';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeService } from '../like/like.service';
 import { Follower, Following, MeFollowed } from '../../libs/DTO/follow/follow';
@@ -206,73 +200,6 @@ export class MemberService {
         return result;
 
     }
-
-@UseGuards(AuthGuard)
-@Mutation((returns) => String)
-public async imageUploader(
-	@Args({ name: 'file', type: () => GraphQLUpload })
-{ createReadStream, filename, mimetype }: FileUpload,
-@Args('target') target: String,
-): Promise<string> {
-	console.log('Mutation: imageUploader');
-
-	if (!filename) throw new Error(Message.UPLOAD_FAILED);
-const validMime = validMimeTypes.includes(mimetype);
-if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
-
-const imageName = getSerialForImage(filename);
-const url = `uploads/${target}/${imageName}`;
-const stream = createReadStream();
-
-const result = await new Promise((resolve, reject) => {
-	stream
-		.pipe(createWriteStream(url))
-		.on('finish', async () => resolve(true))
-		.on('error', () => reject(false));
-});
-if (!result) throw new Error(Message.UPLOAD_FAILED);
-
-return url;
-}
-
-@UseGuards(AuthGuard)
-@Mutation((returns) => [String])
-public async imagesUploader(
-	@Args('files', { type: () => [GraphQLUpload] })
-files: Promise<FileUpload>[],
-@Args('target') target: String,
-): Promise<string[]> {
-	console.log('Mutation: imagesUploader');
-
-    const uploadedImages: string[] = [];
-    	const promisedList = files.map(async (img: Promise<FileUpload>, index: number): Promise<Promise<void>> => {
-		try {
-			const { filename, mimetype, encoding, createReadStream } = await img;
-
-			const validMime = validMimeTypes.includes(mimetype);
-			if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
-
-			const imageName = getSerialForImage(filename);
-			const url = `uploads/${target}/${imageName}`;
-			const stream = createReadStream();
-
-			const result = await new Promise((resolve, reject) => {
-				stream
-					.pipe(createWriteStream(url))
-					.on('finish', () => resolve(true))
-					.on('error', () => reject(false));
-			});
-			if (!result) throw new Error(Message.UPLOAD_FAILED);
-
-			uploadedImages[index] = url;
-		} catch (err) {
-			console.log('Error, file missing!');
-		}
-	});
-
-	await Promise.all(promisedList);
-	return uploadedImages;
-}
 
 public async memberStatsEditor(input: StatisticModifier): Promise<Member> {
     const { _id, targetKey, modifier } = input;

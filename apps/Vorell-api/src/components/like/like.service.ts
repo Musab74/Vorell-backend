@@ -12,34 +12,35 @@ import { Watches } from '../../libs/DTO/watch/watch';
 
 @Injectable()
 export class LikeService {
-	constructor(@InjectModel('Like') private readonly likeModel: Model<Like>) {}
+	constructor(@InjectModel('Like') private readonly likeModel: Model<Like>) { }
 
 	public async toggleLike(input: LikeInput): Promise<number> {
-		const search: T = {
-			memberId: input.memberId,
-			likeRefId: input.likeRefId,
-		};
-		const exist = await this.likeModel.findOne(search).exec();
-		let modifier = 1;
-
-		if (exist) {
-			await this.likeModel.findOneAndDelete(search).exec();
-			modifier = -1;
-		} else {
-			try {
-				await this.likeModel.create(input);
-			} catch (err) {
-				console.log('ERROR, Service.model:', err.message);
-				throw new BadRequestException(Message.CREATE_FAILED);
-			}
+		const search = { memberId: input.memberId, likeRefId: input.likeRefId, likeGroup: input.likeGroup };
+		const existing = await this.likeModel.findOne(search).lean();
+		if (existing) {
+		  const del = await this.likeModel.deleteOne({ _id: existing._id });
+		  if (del.acknowledged && del.deletedCount === 1) return -1;
+		  throw new BadRequestException('Failed to remove like.');
 		}
-		console.log(` - Like modifier ${modifier} -`);
-		return modifier;
-	}
+	  
+		try {
+		  await this.likeModel.create(input);
+		  return 1;
+		} catch (err: any) {
+		  if (err?.code === 11000) return 1; // race: someone just created it
+		  console.log('ERROR, Service.model:', err.message);
+		  throw new BadRequestException(Message.CREATE_FAILED);
+		}
+	  }
+	  
 
 	public async checkLikeExistence(input: LikeInput): Promise<MeLiked[]> {
 		const { memberId, likeRefId } = input; ///distruction
-		const result = await this.likeModel.findOne({ memberId: memberId, likeRefId: likeRefId }).exec();
+		const result = await this.likeModel.findOne({
+			memberId,
+			likeRefId,
+			likeGroup: input.likeGroup,
+		}).exec();
 		return result ? [{ memberId: memberId, likeRefId: likeRefId, myFavorite: true }] : [];
 	}
 
@@ -60,6 +61,7 @@ export class LikeService {
 					},
 				},
 				{ $unwind: '$favoriteWatch' },
+				{ $match: { 'favoriteWatch.watchStatus': 'IN_STOCK' } },
 				{
 					$facet: {
 						list: [

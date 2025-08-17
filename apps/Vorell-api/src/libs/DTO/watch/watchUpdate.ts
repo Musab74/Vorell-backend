@@ -1,6 +1,6 @@
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
 import { IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
-import { WatchOrigin, WatchStatus, WatchType } from '../../enums/watch.enum';
+import { CaseDiameter, Movement, WatchOrigin, WatchStatus, WatchType } from '../../enums/watch.enum';
 
 @InputType()
 export class WatchUpdate{
@@ -35,18 +35,17 @@ export class WatchUpdate{
   price?: number;
 
   @IsOptional()
-  @Field(() => Number, { nullable: true })
-  caseDiameter?: number; // in mm
+  @Field(() => CaseDiameter, { nullable: true })
+  caseDiameter?: CaseDiameter; // in mm
 
   @IsOptional()
   @Length(2, 100)
-  @Field(() => String, { nullable: true })
-  movement?: string;
+  @Field(() => Movement, { nullable: true })
+  movement?: Movement;
 
   @IsOptional()
-  @Length(2, 100)
   @Field(() => String, { nullable: true })
-  waterResistance?: string;
+  waterResistance?: number;
 
   @IsOptional()
   @Field(() => [String], { nullable: true })

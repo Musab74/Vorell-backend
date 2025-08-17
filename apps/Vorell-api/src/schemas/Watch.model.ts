@@ -47,7 +47,7 @@ const WatchSchema = new Schema(
     },
 
     waterResistance: {
-      type: String,
+      type: Number,
     },
 
     watchViews: {
