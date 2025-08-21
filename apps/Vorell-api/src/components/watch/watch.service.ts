@@ -149,7 +149,6 @@ export class WatchService {
             brandList,
             periodsRange,
             pricesRange,
-            options,
             text,
         } = input.search;
 
@@ -174,10 +173,6 @@ export class WatchService {
 
         if (text) {
             match.modelName = { $regex: new RegExp(text, 'i') };
-        }
-
-        if (options && options.length) {
-            match['$or'] = options.map((option) => ({ [option]: true }));
         }
     }
 
