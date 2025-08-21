@@ -6,21 +6,27 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
-    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:dev:batch": "nest start Vorell-batch --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "NODE_ENV=production node dist/apps/Vorell-api/main",
-    "start:prod:batch": "node dist/apps/Vorell-batch/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/Vorell-api/test/jest-e2e.json"
-  },
+  "build": "nest build Vorell-api && nest build Vorell-batch",
+  "build:api": "nest build Vorell-api",
+  "build:batch": "nest build Vorell-batch",
+
+  "start": "nest start Vorell-api",
+  "start:dev": "nest start Vorell-api --watch",
+  "start:dev:batch": "nest start Vorell-batch --watch",
+  "start:debug": "nest start Vorell-api --debug --watch",
+
+  "start:prod": "NODE_ENV=production node dist/apps/Vorell-api/main.js",
+  "start:prod:batch": "NODE_ENV=production node dist/apps/Vorell-batch/main.js",
+
+  "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+  "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+  "test": "jest",
+  "test:watch": "jest --watch",
+  "test:cov": "jest --coverage",
+  "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+  "test:e2e": "jest --config ./apps/Vorell-api/test/jest-e2e.json"
+}
+,
   "dependencies": {
     "@apollo/server": "^4.9.5",
     "@nestjs/apollo": "^12.0.10",

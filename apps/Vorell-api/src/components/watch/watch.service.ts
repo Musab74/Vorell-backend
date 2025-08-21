@@ -22,8 +22,6 @@ export class WatchService {
         private memberService: MemberService,
         private viewService: ViewService,
         private likeService: LikeService,
-
-
     ) { }
 
     // CREATE Watch
@@ -193,62 +191,59 @@ export class WatchService {
     // Service
     public async getStoreWatches(input: StoreWatchesInquiry): Promise<Watches> {
         const {
-          page,
-          limit,
-          sort = 'createdAt',
-          direction = Direction.DESC,
-          search = {} as any,
+            page,
+            limit,
+            sort = 'createdAt',
+            direction = Direction.DESC,
+            search = {} as any,
         } = input;
-      
+
         const { memberId, watchStatus } = search;
-      
+
         // If still missing (auth not wired), don't miscount: return empty.
         if (!memberId) {
-          console.warn('[getStoreWatches] missing memberId; returning empty.');
-          return { list: [], metaCounter: [{ total: 0 }] } as any;
+            console.warn('[getStoreWatches] missing memberId; returning empty.');
+            return { list: [], metaCounter: [{ total: 0 }] } as any;
         }
-      
+
         // handle both string/ObjectId
         const memberObjId =
-          typeof memberId === 'string' ? shapeIntoMongoObjectId(memberId) : memberId;
-      
-        const match: T = {
-          memberId: memberObjId,
-          watchStatus: watchStatus ?? WatchStatus.IN_STOCK, // default
-          // deletedAt: null   // optional; if you soft-delete, keep this. It matches null or missing by default.
-        };
-      
-        const sortStage: T = { [sort]: direction };
-      
-        console.log('[getStoreWatches] match =>', match);
-      
-        const [agg] = await this.watchModel
-          .aggregate([
-            { $match: match },
-            { $sort: sortStage },
-            {
-              $facet: {
-                list: [
-                  { $skip: (page - 1) * limit },
-                  { $limit: limit },
-                  lookUpMember,
-                  // Do NOT drop rows if lookup fails
-                  { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
-                ],
-                metaCounter: [{ $count: 'total' }],
-              },
-            },
-          ])
-          .exec();
-      
-        return {
-          list: agg?.list ?? [],
-          metaCounter: agg?.metaCounter?.length ? agg.metaCounter : [{ total: 0 }],
-        } as any;
-      }
-      
-      
+            typeof memberId === 'string' ? shapeIntoMongoObjectId(memberId) : memberId;
 
+        const match: T = {
+            memberId: memberObjId,
+            watchStatus: watchStatus ?? WatchStatus.IN_STOCK, // default
+            // deletedAt: null   // optional; if you soft-delete, keep this. It matches null or missing by default.
+        };
+
+        const sortStage: T = { [sort]: direction };
+
+        console.log('[getStoreWatches] match =>', match);
+
+        const [agg] = await this.watchModel
+            .aggregate([
+                { $match: match },
+                { $sort: sortStage },
+                {
+                    $facet: {
+                        list: [
+                            { $skip: (page - 1) * limit },
+                            { $limit: limit },
+                            lookUpMember,
+                            // Do NOT drop rows if lookup fails
+                            { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+                        ],
+                        metaCounter: [{ $count: 'total' }],
+                    },
+                },
+            ])
+            .exec();
+
+        return {
+            list: agg?.list ?? [],
+            metaCounter: agg?.metaCounter?.length ? agg.metaCounter : [{ total: 0 }],
+        } as any;
+    }
 
 
     // LIKE TARGET watch
