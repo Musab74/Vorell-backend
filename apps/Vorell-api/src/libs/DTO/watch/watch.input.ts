@@ -46,15 +46,15 @@ export class WatchInput {
   price: number;
 
   @IsOptional()
-  @Field(() => CaseDiameter, { nullable: true })
-  caseDiameter?: CaseDiameter;
+  @Field(() => String, { nullable: true })
+  caseDiameter?: string;
 
   @IsOptional()
   @Field(() => Movement, { nullable: true })
   movement?: Movement;
 
   @IsOptional()
-  @Field(() => Number, { nullable: true })
+  @Field(() => Int, { nullable: true })
   waterResistance?: number;
 
   @IsOptional()
@@ -106,21 +106,21 @@ export class Input {
   brand?: string;
 
   @IsOptional()
-  @Field(() => Number, { nullable: true })
+  @Field(() => Int, { nullable: true })
   price?: number;
 
   @IsOptional()
-  @Field(() => CaseDiameter, { nullable: true })
-  caseDiameter?: CaseDiameter[];
+  @Field(() => [String], { nullable: true })
+  caseDiameter?: string[];
 
   @IsOptional()
   @Length(2, 100)
-  @Field(() => Movement, { nullable: true })
+  @Field(() => [Movement], { nullable: true })
   movement?: Movement[];
 
   @IsOptional()
   @Length(2, 100)
-  @Field(() => String, { nullable: true })
+  @Field(() => Int, { nullable: true })
   waterResistance?: number;
 
   @IsOptional()
@@ -199,8 +199,8 @@ class WatchSearchInput {
   @IsOptional() @Field(() => [Movement], { nullable: true })
   movement?: Movement[];      // ✅ ARRAY
 
-  @IsOptional() @Field(() => [CaseDiameter], { nullable: true })
-  caseDiameter?: CaseDiameter[]; // ✅ ARRAY
+  @IsOptional() @Field(() => [String], { nullable: true })
+  caseDiameter?: string[]; // ✅ ARRAY
 
   @IsOptional() @Field(() => Boolean, { nullable: true })
   isLimitedEdition?: boolean;

@@ -148,12 +148,16 @@ export class WatchService {
             periodsRange,
             pricesRange,
             text,
+            movement,
+            caseDiameter,
         } = input.search;
 
         if (memberId) match.memberId = shapeId(memberId);
         if (originList && originList.length) match.watchOrigin = { $in: originList };
         if (typeList && typeList.length) match.watchType = { $in: typeList };
         if (brandList && brandList.length) match.brand = { $in: brandList };
+        if (movement && movement.length) match.movement = { $in: movement };
+        if (caseDiameter && caseDiameter.length) match.caseDiameter = { $in: caseDiameter };
 
         if (pricesRange) {
             match.price = {

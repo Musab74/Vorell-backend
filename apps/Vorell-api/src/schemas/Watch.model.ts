@@ -37,7 +37,7 @@ const WatchSchema = new Schema(
     },
 
     caseDiameter: {
-      type: Number,
+      type: String,
       required: false,
     },
 

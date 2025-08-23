@@ -1,6 +1,6 @@
 import { Field, Int, ObjectType } from "@nestjs/graphql";
 import { ObjectId } from "mongoose";
-import { WatchType, WatchStatus, WatchOrigin, CaseDiameter, Movement } from "../../enums/watch.enum";
+import { WatchType, WatchStatus, WatchOrigin, Movement } from "../../enums/watch.enum";
 import { Member, TotalCounter } from "../member/member";
 import { MeLiked } from "../like/like";
 
@@ -27,8 +27,8 @@ export class Watch {
   @Field(() => Number)
   price: number;
 
-  @Field(() => CaseDiameter, { nullable: true })
-  caseDiameter?: CaseDiameter; // in mm
+  @Field(() => String, { nullable: true })
+  caseDiameter?: string; // in mm
 
   @Field(() => Movement, { nullable: true })
   movement?: Movement;

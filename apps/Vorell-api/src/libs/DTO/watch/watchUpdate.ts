@@ -35,8 +35,8 @@ export class WatchUpdate{
   price?: number;
 
   @IsOptional()
-  @Field(() => CaseDiameter, { nullable: true })
-  caseDiameter?: CaseDiameter; // in mm
+  @Field(() => String, { nullable: true })
+  caseDiameter?: string; // in mm
 
   @IsOptional()
   @Length(2, 100)
@@ -44,9 +44,8 @@ export class WatchUpdate{
   movement?: Movement;
 
   @IsOptional()
-  @Field(() => String, { nullable: true })
+  @Field(() => Int, { nullable: true })       
   waterResistance?: number;
-
   @IsOptional()
   @Field(() => [String], { nullable: true })
   images?: string[];
