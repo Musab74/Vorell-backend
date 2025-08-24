@@ -17,324 +17,318 @@ import { Watch, Watches } from '../../libs/DTO/watch/watch';
 
 @Injectable()
 export class WatchService {
-    constructor(
-        @InjectModel('Watch') private readonly watchModel: Model<Watch>,
-        private memberService: MemberService,
-        private viewService: ViewService,
-        private likeService: LikeService,
-    ) { }
+  constructor(
+    @InjectModel('Watch') private readonly watchModel: Model<Watch>,
+    private readonly memberService: MemberService,
+    private readonly viewService: ViewService,
+    private readonly likeService: LikeService,
+  ) {}
 
-    // CREATE Watch
-    public async createWatch(input: WatchInput): Promise<Watch> {
-        try {
-            const result = await this.watchModel.create(input);
-            await this.memberService.memberStatsEditor({
-                _id: result.memberId,
-                targetKey: 'storeWatches',
-                modifier: 1
-            });
-            return result;
-        } catch (err) {
-            console.log('Error, Service.model:', err.message);
-            throw new BadRequestException(Message.CREATE_FAILED);
-        }
+  // CREATE Watch
+  public async createWatch(input: WatchInput): Promise<Watch> {
+    try {
+      const result = await this.watchModel.create(input);
+      await this.memberService.memberStatsEditor({
+        _id: result.memberId,
+        targetKey: 'storeWatches',
+        modifier: 1,
+      });
+      return result;
+    } catch (err: any) {
+      console.log('Error, Service.model:', err?.message);
+      throw new BadRequestException(Message.CREATE_FAILED);
+    }
+  }
+
+  // GET watch
+  public async getWatch(memberId: ObjectId, watchId: ObjectId): Promise<Watch> {
+    const search: T = {
+      _id: watchId,
+      watchStatus: WatchStatus.IN_STOCK,
+    };
+
+    const targetWatch = await this.watchModel.findOne(search).exec();
+    if (!targetWatch) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+    if (memberId) {
+      // record a view
+      const viewInput = { memberId, viewRefId: watchId, viewGroup: ViewGroup.WATCH };
+      const newView = await this.viewService.recordView(viewInput);
+      if (newView) {
+        await this.watchStatsEditor({ _id: watchId, targetKey: 'watchViews', modifier: 1 });
+        targetWatch.watchViews++;
+      }
+
+      // populate memberData
+      targetWatch.memberData = await this.memberService.getMember(targetWatch.memberId, null as any);
+
+      // meLiked
+      const likeInput = { memberId, likeRefId: watchId, likeGroup: LikeGroup.WATCH };
+      targetWatch.meLiked = await this.likeService.checkLikeExistence(likeInput);
     }
 
-    // GET watch
-    public async getWatch(memberId: ObjectId, watchId: ObjectId): Promise<Watch> {
-        const search: T = {
-            _id: watchId,
-            watchStatus: WatchStatus.IN_STOCK,
-        };
-        // const search: T = { _id: watchId };
-        console.log('SEARCH OBJECT:', search);
+    return targetWatch;
+  }
 
-        const targetWatch = await this.watchModel.findOne(search).exec();
-        console.log('RESULT:', targetWatch);
-        console.log("Looking for member:", memberId, typeof memberId);
+  // UPDATE WATCH (owner)
+  public async updateWatch(memberId: ObjectId, input: WatchUpdate): Promise<Watch> {
+    let { watchStatus, soldAt, deletedAt } = input;
 
+    const search: T = {
+      _id: input._id,
+      memberId,
+      watchStatus: WatchStatus.IN_STOCK,
+    };
 
-        if (!targetWatch) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    if (watchStatus === WatchStatus.SOLD) soldAt = moment().toDate();
+    else if (watchStatus === WatchStatus.DELETE) deletedAt = moment().toDate();
 
-        if (memberId) {
-            const viewInput = { memberId: memberId, viewRefId: watchId, viewGroup: ViewGroup.WATCH };
-            const newView = await this.viewService.recordView(viewInput);
-            if (newView) {
-                await this.watchStatsEditor({ _id: watchId, targetKey: 'watchViews', modifier: 1 });
-                targetWatch.watchViews++;
-            }
+    const result = (await this.watchModel
+      .findOneAndUpdate(search, { ...input, soldAt, deletedAt }, { new: true })
+      .exec()) as Watch;
 
-            targetWatch.memberData = await this.memberService.getMember(targetWatch.memberId, null as any);
+    if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 
-            // meLiked
-            const likeInput = { memberId: memberId, likeRefId: watchId, likeGroup: LikeGroup.WATCH };
-            targetWatch.meLiked = await this.likeService.checkLikeExistence(likeInput);
-        }
-
-        return targetWatch;
-
+    if (soldAt || deletedAt) {
+      await this.memberService.memberStatsEditor({
+        _id: memberId,
+        targetKey: 'storeWatches', // corrected key
+        modifier: -1,
+      });
     }
 
-    // UPDATE WATCH
-    public async updateWatch(memberId: ObjectId, input: WatchUpdate): Promise<Watch> {
-        let { watchStatus, soldAt, deletedAt } = input;
-        const search: T = {
-            _id: input._id,
-            memberId: memberId,
-            watchStatus: WatchStatus.IN_STOCK,
-        };
-        if (watchStatus === WatchStatus.SOLD) soldAt = moment().toDate();
-        else if (watchStatus === WatchStatus.DELETE) deletedAt = moment().toDate();
+    return result;
+  }
 
-        const result: Watch = await this.watchModel.findOneAndUpdate(search, input, { new: true }).exec() as Watch;
-        if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-        if (soldAt || deletedAt) {
-            await this.memberService.memberStatsEditor({
-                _id: memberId,
-                targetKey: 'memberWatches',
-                modifier: -1,
-            });
-        }
-        return result;
+  // Increment/decrement watch counters
+  public async watchStatsEditor(input: StatisticModifier): Promise<Watch> {
+    const { _id, targetKey, modifier } = input;
+    return (await this.watchModel
+      .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
+      .exec()) as Watch;
+  }
+
+  // GET watches (catalog for users)
+  public async getWatches(memberId: ObjectId, input: WatchesInquiry): Promise<Watches> {
+    const match: T = { watchStatus: WatchStatus.IN_STOCK };
+    const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+
+    this.shapeMatchQuery(match, input);
+
+    if (input?.search?.isLimitedEdition !== undefined) {
+      match.isLimitedEdition = input.search.isLimitedEdition;
     }
 
-    // watchStatsEditor
-    public async watchStatsEditor(input: StatisticModifier): Promise<Watch> {
-        const { _id, targetKey, modifier } = input;
-        return await this.watchModel.findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true }).exec() as Watch;
+    const result = await this.watchModel
+      .aggregate([
+        { $match: match },
+        { $sort: sort },
+        {
+          $facet: {
+            list: [
+              { $skip: (input.page - 1) * input.limit },
+              { $limit: input.limit },
+              // meLiked for authed user
+              lookupAuthMemberLiked(memberId),
+            ],
+            metaCounter: [{ $count: 'total' }],
+          },
+        },
+      ])
+      .exec();
+
+    if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+    return result[0];
+  }
+
+  // Build $match from incoming filters
+  private shapeMatchQuery(match: Record<string, any>, input: WatchesInquiry): void {
+    const {
+      memberId,
+      originList,
+      typeList,
+      brandList,
+      periodsRange,
+      movement,
+      caseDiameter,
+      pricesRange,
+      text,
+    } = input.search ?? ({} as any);
+
+    if (memberId) match.memberId = shapeId(memberId);
+    if (originList?.length) match.watchOrigin = { $in: originList };
+    if (typeList?.length) match.watchType = { $in: typeList };
+    if (brandList?.length) match.brand = { $in: brandList };
+    if (movement?.length) match.movement = { $in: movement };
+    if (caseDiameter?.length) match.caseDiameter = { $in: caseDiameter };
+
+    if (pricesRange) {
+      match.price = {
+        $gte: pricesRange.start,
+        $lte: pricesRange.end,
+      };
     }
 
-    // GET watches
-    public async getWatches(memberId: ObjectId, input: WatchesInquiry): Promise<Watches> {
-        const match: T = { watchStatus: WatchStatus.IN_STOCK };
-        const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
-
-        this.shapeMatchQuery(match, input);
-
-        if (input?.search?.isLimitedEdition !== undefined) {
-            match.isLimitedEdition = input.search.isLimitedEdition;
-        }
-
-        const result = await this.watchModel
-            .aggregate([
-                { $match: match },
-                { $sort: sort },
-                {
-                    $facet: {
-                        list: [
-                            { $skip: (input.page - 1) * input.limit },
-                            { $limit: input.limit },
-                            // meLiked
-                            lookupAuthMemberLiked(memberId),
-                        ],
-                        metaCounter: [{ $count: 'total' }],
-                    },
-                },
-            ])
-            .exec();
-
-        if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-
-        return result[0];
+    if (periodsRange) {
+      match.createdAt = {
+        $gte: periodsRange.start,
+        $lte: periodsRange.end,
+      };
     }
 
-    //  Private method use only inside 
-    private shapeMatchQuery(match: Record<string, any>, input: WatchesInquiry): void {
-        const {
-            memberId,
-            originList,
-            typeList,
-            brandList,
-            periodsRange,
-            movement,
-            caseDiameter,
-            pricesRange,
-            text,
-            movement,
-            caseDiameter,
-        } = input.search;
+    if (text) {
+      match.modelName = { $regex: new RegExp(text, 'i') };
+    }
+  }
 
-        if (memberId) match.memberId = shapeId(memberId);
-        if (originList && originList.length) match.watchOrigin = { $in: originList };
-        if (typeList && typeList.length) match.watchType = { $in: typeList };
-        if (brandList && brandList.length) match.brand = { $in: brandList };
-<<<<<<< HEAD
-        if (movement && movement.length) match.movement = { $in: movement };
-        if (caseDiameter && caseDiameter.length) match.caseDiameter = { $in: caseDiameter };
-=======
-        if (movement?.length) match.movement = { $in: movement };
-        if (caseDiameter?.length) match.caseDiameter = { $in: caseDiameter };
->>>>>>> develop
+  // GET favorites list for a member
+  public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
+    return await this.likeService.getFavoriteWatches(memberId, input);
+  }
 
-        if (pricesRange) {
-            match.price = {
-                $gte: pricesRange.start,
-                $lte: pricesRange.end,
-            };
-        }
+  // GET visited watches for a member
+  public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
+    return await this.viewService.getVisitedWatches(memberId, input);
+  }
 
-        if (periodsRange) {
-            match.createdAt = {
-                $gte: periodsRange.start,
-                $lte: periodsRange.end,
-            };
-        }
+  // Store page: watches for a specific seller/store
+  public async getStoreWatches(input: StoreWatchesInquiry): Promise<Watches> {
+    const {
+      page,
+      limit,
+      sort = 'createdAt',
+      direction = Direction.DESC,
+      search = {} as any,
+    } = input;
 
-        if (text) {
-            match.modelName = { $regex: new RegExp(text, 'i') };
-        }
+    const { memberId, watchStatus } = search;
+
+    if (!memberId) {
+      // Avoid miscounts if auth/wiring is missing
+      console.warn('[getStoreWatches] missing memberId; returning empty.');
+      return { list: [], metaCounter: [{ total: 0 }] } as any;
     }
 
+    const memberObjId =
+      typeof memberId === 'string' ? shapeIntoMongoObjectId(memberId) : memberId;
 
-    // GET FAVORITES
-    public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
-        return await this.likeService.getFavoriteWatches(memberId, input);
+    const match: T = {
+      memberId: memberObjId,
+      watchStatus: watchStatus ?? WatchStatus.IN_STOCK,
+    };
+
+    const sortStage: T = { [sort]: direction };
+
+    const [agg] = await this.watchModel
+      .aggregate([
+        { $match: match },
+        { $sort: sortStage },
+        {
+          $facet: {
+            list: [
+              { $skip: (page - 1) * limit },
+              { $limit: limit },
+              lookUpMember,
+              { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+            ],
+            metaCounter: [{ $count: 'total' }],
+          },
+        },
+      ])
+      .exec();
+
+    return {
+      list: agg?.list ?? [],
+      metaCounter: agg?.metaCounter?.length ? agg.metaCounter : [{ total: 0 }],
+    } as any;
+  }
+
+  // LIKE toggle for a watch
+  public async likeTargetWatch(memberId: ObjectId, likeRefId: ObjectId): Promise<Watch> {
+    const target = await this.watchModel
+      .findOne({ _id: likeRefId, watchStatus: WatchStatus.IN_STOCK })
+      .exec();
+    if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+    const input: any = {
+      memberId,
+      likeRefId,
+      likeGroup: LikeGroup.WATCH,
+    };
+
+    const modifier: number = await this.likeService.toggleLike(input);
+    const result = await this.watchStatsEditor({
+      _id: likeRefId,
+      targetKey: 'likes',
+      modifier,
+    });
+    if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
+    return result;
+  }
+
+  // Admin: list all watches w/ filters
+  public async getAllWatchesByAdmin(input: AllWatchesInquiry): Promise<Watches> {
+    const { watchStatus, originList } = input.search ?? ({} as any);
+    const match: T = {};
+    const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+
+    if (watchStatus) match.watchStatus = watchStatus;
+    if (originList?.length) match.watchOrigin = { $in: originList }; // fixed field name
+
+    const result = await this.watchModel.aggregate([
+      { $match: match },
+      { $sort: sort },
+      {
+        $facet: {
+          list: [
+            { $skip: (input.page - 1) * input.limit },
+            { $limit: input.limit },
+            lookUpMember,
+            { $unwind: '$memberData' },
+          ],
+          metaCounter: [{ $count: 'total' }],
+        },
+      },
+    ]);
+
+    if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    return result[0];
+  }
+
+  // Admin: update any watch
+  public async updateWatchByAdmin(input: WatchUpdate): Promise<Watch> {
+    let { watchStatus, soldAt, deletedAt } = input;
+
+    const search: T = {
+      _id: input._id,
+      watchStatus: WatchStatus.IN_STOCK,
+    };
+
+    if (watchStatus === WatchStatus.SOLD) soldAt = moment().toDate();
+    else if (watchStatus === WatchStatus.DELETE) deletedAt = moment().toDate();
+
+    const result = await this.watchModel
+      .findOneAndUpdate(search, { ...input, soldAt, deletedAt }, { new: true })
+      .exec();
+
+    if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+
+    if (soldAt || deletedAt) {
+      await this.memberService.memberStatsEditor({
+        _id: result.memberId,
+        targetKey: 'storeWatches',
+        modifier: -1,
+      });
     }
+    return result as Watch;
+  }
 
-    // GET VISITED
-    public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Watches> {
-        return await this.viewService.getVisitedWatches(memberId, input);
-    }
-
-
-    //   getStoreWatches
-
-    // Service
-    public async getStoreWatches(input: StoreWatchesInquiry): Promise<Watches> {
-        const {
-            page,
-            limit,
-            sort = 'createdAt',
-            direction = Direction.DESC,
-            search = {} as any,
-        } = input;
-
-        const { memberId, watchStatus } = search;
-
-        // If still missing (auth not wired), don't miscount: return empty.
-        if (!memberId) {
-            console.warn('[getStoreWatches] missing memberId; returning empty.');
-            return { list: [], metaCounter: [{ total: 0 }] } as any;
-        }
-
-        // handle both string/ObjectId
-        const memberObjId =
-            typeof memberId === 'string' ? shapeIntoMongoObjectId(memberId) : memberId;
-
-        const match: T = {
-            memberId: memberObjId,
-            watchStatus: watchStatus ?? WatchStatus.IN_STOCK, // default
-            // deletedAt: null   // optional; if you soft-delete, keep this. It matches null or missing by default.
-        };
-
-        const sortStage: T = { [sort]: direction };
-
-        console.log('[getStoreWatches] match =>', match);
-
-        const [agg] = await this.watchModel
-            .aggregate([
-                { $match: match },
-                { $sort: sortStage },
-                {
-                    $facet: {
-                        list: [
-                            { $skip: (page - 1) * limit },
-                            { $limit: limit },
-                            lookUpMember,
-                            // Do NOT drop rows if lookup fails
-                            { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
-                        ],
-                        metaCounter: [{ $count: 'total' }],
-                    },
-                },
-            ])
-            .exec();
-
-        return {
-            list: agg?.list ?? [],
-            metaCounter: agg?.metaCounter?.length ? agg.metaCounter : [{ total: 0 }],
-        } as any;
-    }
-
-
-    // LIKE TARGET watch
-    public async likeTargetWatch(memberId: ObjectId, likeRefId: ObjectId): Promise<Watch> {
-        const target: any = await this.watchModel
-            .findOne({ _id: likeRefId, watchStatus: WatchStatus.IN_STOCK })
-            .exec();
-        if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-
-        const input: any = {
-            memberId: memberId,
-            likeRefId: likeRefId,
-            likeGroup: LikeGroup.WATCH,
-        };
-
-        const modifier: number = await this.likeService.toggleLike(input);
-        const result = await this.watchStatsEditor({ _id: likeRefId, targetKey: 'likes', modifier: modifier });
-        if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
-        return result;
-    }
-
-
-    // getAllWatchesByAdmin
-    public async getAllWatchesByAdmin(input: AllWatchesInquiry): Promise<Watches> {
-        const { watchStatus, originList } = input.search;
-        const match: T = {};
-        const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
-
-        if (watchStatus) match.watchStatus = watchStatus;
-        if (originList) match.originList = { $in: originList };
-
-        const result = await this.watchModel.aggregate([
-            { $match: match },
-            { $sort: sort },
-            {
-                $facet: {
-                    list: [
-                        { $skip: (input.page - 1) * input.limit },
-                        { $limit: input.limit },
-                        lookUpMember,
-                        { $unwind: '$memberData' },
-                    ],
-                    metaCounter: [{ $count: 'total' }],
-                },
-            },
-        ]);
-
-        if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-        return result[0];
-    }
-
-    // UPDATE WATCH BY ADMIN
-    public async updateWatchByAdmin(input: WatchUpdate): Promise<Watch> {
-        let { watchStatus, soldAt, deletedAt } = input;
-        const search: T = {
-            _id: input._id,
-            watchStatus: WatchStatus.IN_STOCK,
-        };
-        if (watchStatus === WatchStatus.SOLD) soldAt = moment().toDate();
-        else if (watchStatus === WatchStatus.DELETE) deletedAt = moment().toDate();
-
-        const result = await this.watchModel.findOneAndUpdate(search, input, { new: true }).exec();
-        if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-        if (soldAt || deletedAt) {
-            await this.memberService.memberStatsEditor({
-                _id: result.memberId,
-                targetKey: 'storeWatches',
-                modifier: -1,
-            });
-        }
-        return result;
-    }
-
-    // DELETE WATCH BY ADMIN
-    public async removeWatchByAdmin(watchId: ObjectId): Promise<Watch> {
-        const search: T = { _id: watchId, WatchStatus: WatchStatus.DELETE };
-        const result = await this.watchModel.findOneAndDelete(search).exec();
-        if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
-
-        return result;
-    }
-
+  // Admin: hard delete a watch already marked as DELETE
+  public async removeWatchByAdmin(watchId: ObjectId): Promise<Watch> {
+    const search: T = { _id: watchId, watchStatus: WatchStatus.DELETE }; // fixed key name
+    const result = await this.watchModel.findOneAndDelete(search).exec();
+    if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
+    return result as Watch;
+  }
 }
