@@ -2,7 +2,6 @@ import { Mutation, Resolver, Query, Args } from '@nestjs/graphql';
 import { MemberService } from './member.service';
 import { Member, Members } from '../../libs/DTO/member/member';
 import { LoginInput, MemberInput, MembersInquiry, StoresInquiry } from '../../libs/DTO/member/member.input';
-import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
 import { ObjectId } from 'mongoose';
@@ -13,10 +12,13 @@ import { MemberUpdate } from '../../libs/DTO/member/update.member';
 import { shapeIntoMongoObjectId } from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
-import { createWriteStream } from 'fs';
 import { getSerialForImage, lookupAuthMemberLiked, validMimeTypes } from '../../libs/config';
 import { LikeInput } from '../../libs/DTO/like/like.input';
 import { Message } from '../../libs/enums/common.enum';
+import { BadRequestException, UseGuards } from '@nestjs/common';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { pipeline } from 'stream/promises';
 
 @Resolver()
 export class MemberResolver {
@@ -64,73 +66,91 @@ export class MemberResolver {
 	}
 
 	//Image uploader
-
+	/** SINGLE FILE **/
 	@UseGuards(AuthGuard)
-	@Mutation((returns) => String)
+	@Mutation(() => String)
 	public async imageUploader(
-		@Args({ name: 'file', type: () => GraphQLUpload })
-		{ createReadStream, filename, mimetype }: FileUpload,
-		@Args('target') target: String,
+		@Args({ name: 'file', type: () => GraphQLUpload }) file: FileUpload,
+		@Args('target') target: string,
 	): Promise<string> {
 		console.log('Mutation: imageUploader');
 
-		if (!filename) throw new Error(Message.UPLOAD_FAILED);
+		const { createReadStream, filename, mimetype } = file;
+		if (!filename) throw new BadRequestException(Message.UPLOAD_FAILED);
+
 		const validMime = validMimeTypes.includes(mimetype);
-		if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+		if (!validMime) throw new BadRequestException(Message.PROVIDE_ALLOWED_FORMAT);
+
+		// ensure dir exists: uploads/<target>
+		const dir = join(process.cwd(), 'uploads', target);
+		if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
 		const imageName = getSerialForImage(filename);
-		const url = `uploads/${target}/${imageName}`;
-		const stream = createReadStream();
+		const relPath = join('uploads', target, imageName);
+		const absPath = join(process.cwd(), relPath);
 
-		const result = await new Promise((resolve, reject) => {
-			stream
-				.pipe(createWriteStream(url))
-				.on('finish', async () => resolve(true))
-				.on('error', () => reject(false));
+		await new Promise<void>((resolve, reject) => {
+			const write = createWriteStream(absPath);
+			createReadStream()
+				.on('error', (e) => reject(new BadRequestException(Message.UPLOAD_FAILED)))
+				.pipe(write)
+				.on('finish', () => resolve())
+				.on('error', (e) => reject(new BadRequestException(Message.UPLOAD_FAILED)));
 		});
-		if (!result) throw new Error(Message.UPLOAD_FAILED);
 
-		return url;
+		return relPath;
 	}
 
+	/** MULTI FILE **/
 	@UseGuards(AuthGuard)
-	@Mutation((returns) => [String])
+	@Mutation(() => [String])
 	public async imagesUploader(
-		@Args('files', { type: () => [GraphQLUpload] })
-		files: Promise<FileUpload>[],
-		@Args('target') target: String,
+		@Args('files', { type: () => [GraphQLUpload] }) files: Promise<FileUpload>[],
+		@Args('target') target: string,
 	): Promise<string[]> {
 		console.log('Mutation: imagesUploader');
 
-		const uploadedImages: string[] = [];
-		const promisedList = files.map(async (img: Promise<FileUpload>, index: number): Promise<Promise<void>> => {
-			try {
-				const { filename, mimetype, encoding, createReadStream } = await img;
+		const out: string[] = [];
 
-				const validMime = validMimeTypes.includes(mimetype);
-				if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FORMAT);
+		// ensure dir exists: uploads/<target>
+		const dir = join(process.cwd(), 'uploads', target);
+		if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-				const imageName = getSerialForImage(filename);
-				const url = `uploads/${target}/${imageName}`;
-				const stream = createReadStream();
+		await Promise.all(
+			files.map(async (p, index) => {
+				try {
+					const { filename, mimetype, createReadStream } = await p;
 
-				const result = await new Promise((resolve, reject) => {
-					stream
-						.pipe(createWriteStream(url))
-						.on('finish', () => resolve(true))
-						.on('error', () => reject(false));
-				});
-				if (!result) throw new Error(Message.UPLOAD_FAILED);
+					if (!filename) throw new BadRequestException(Message.UPLOAD_FAILED);
+					const validMime = validMimeTypes.includes(mimetype);
+					if (!validMime) throw new BadRequestException(Message.PROVIDE_ALLOWED_FORMAT);
 
-				uploadedImages[index] = url;
-			} catch (err) {
-				console.log('Error, file missing!');
-			}
-		});
+					const imageName = getSerialForImage(filename);
+					const relPath = join('uploads', target, imageName);
+					const absPath = join(process.cwd(), relPath);
 
-		await Promise.all(promisedList);
-		return uploadedImages;
+					await new Promise<void>((resolve, reject) => {
+						const write = createWriteStream(absPath);
+						createReadStream()
+							.on('error', () => reject(new BadRequestException(Message.UPLOAD_FAILED)))
+							.pipe(write)
+							.on('finish', () => resolve())
+							.on('error', () => reject(new BadRequestException(Message.UPLOAD_FAILED)));
+					});
+
+					out[index] = relPath;
+				} catch (err) {
+					console.log('imagesUploader item failed:', (err as any)?.message || err);
+					// If you prefer to fail the whole mutation on first error, rethrow here:
+					// throw err;
+				}
+			}),
+		);
+
+		if (!out.some(Boolean)) throw new BadRequestException('NO_FILES_RECEIVED');
+		return out.filter(Boolean);
 	}
+
 
 
 	// Authenticated
