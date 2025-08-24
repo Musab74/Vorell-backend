@@ -146,6 +146,8 @@ export class WatchService {
             typeList,
             brandList,
             periodsRange,
+            movement,
+            caseDiameter,
             pricesRange,
             text,
         } = input.search;
@@ -154,6 +156,8 @@ export class WatchService {
         if (originList && originList.length) match.watchOrigin = { $in: originList };
         if (typeList && typeList.length) match.watchType = { $in: typeList };
         if (brandList && brandList.length) match.brand = { $in: brandList };
+        if (movement?.length) match.movement = { $in: movement };
+        if (caseDiameter?.length) match.caseDiameter = { $in: caseDiameter };
 
         if (pricesRange) {
             match.price = {
