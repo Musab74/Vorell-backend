@@ -35,11 +35,11 @@ export class BatchService {
   }
 
   /**
-   * Compute top watches (formerly "properties").
+   * Compute top watches 
    * rank = likes * 2 + watchViews * 1
    * Only compute for in-stock watches whose rank is 0 (fresh).
    */
-  public async batchTopProperties(): Promise<void> {
+  public async batchTopWatches(): Promise<void> {
     const watches: Watch[] = await this.watchModel
       .find({
         watchStatus: WatchStatus.IN_STOCK,

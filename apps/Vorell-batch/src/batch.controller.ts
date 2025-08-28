@@ -15,7 +15,7 @@ export class BatchController {
   }
 
   // Every minute at second 0
-  @Cron('0 * * * * *', { name: BATCH_ROLLBACK })
+  @Cron('0 0 3 * * *', { name: BATCH_ROLLBACK })
   public async batchRollback() {
     try {
       this.logger['context'] = BATCH_ROLLBACK;
@@ -27,19 +27,19 @@ export class BatchController {
   }
 
   // Every minute at second 20
-  @Cron('20 * * * * *', { name: BATCH_TOP_WATCHES })
+  @Cron('20 0 3 * * *', { name: BATCH_TOP_WATCHES })
   public async batchWatches() {
     try {
       this.logger['context'] = BATCH_TOP_WATCHES;
       this.logger.debug('EXECUTED!');
-      await this.batchService.batchTopProperties(); // computes top **watches**
+      await this.batchService.batchTopWatches(); // computes top **watches**
     } catch (err) {
       this.logger.error(err);
     }
   }
 
   // Every minute at second 40
-  @Cron('40 * * * * *', { name: BATCH_TOP_AGENTS })
+  @Cron('40 0 3 * * *', { name: BATCH_TOP_AGENTS })
   public async batchStores() {
     try {
       this.logger['context'] = BATCH_TOP_AGENTS;
