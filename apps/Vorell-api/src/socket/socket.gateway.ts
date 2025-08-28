@@ -67,13 +67,20 @@ export class SocketGateway implements OnGatewayInit {
   private async retrieveMember(req: any): Promise<Member | null> {
     try {
       const parsedUrl = url.parse(req.url, true);
-      const { token } = parsedUrl.query;
-      return await this.authService.verifyToken(token as string);
+      const rawToken = parsedUrl.query?.token as string | undefined;
+  
+      // skip if no token or token is "null"/"undefined"
+      if (!rawToken || rawToken === 'null' || rawToken === 'undefined') {
+        return null;
+      }
+  
+      return await this.authService.verifyToken(rawToken);
     } catch (error) {
-      console.log(error);
+      console.log('retrieveMember error:', error?.message ?? error);
       return null;
     }
   }
+  
 
   public handleDisconnect(client: WebSocket) {
     const authMember = this.clientAuthMap.get(client);
